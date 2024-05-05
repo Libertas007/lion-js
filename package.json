@@ -1,5 +1,5 @@
 {
-    "name": "lion-js",
+    "name": "lion-parser",
     "version": "1.0.0",
     "description": "Libertas Object Notation parser",
     "main": "./dist/main.js",
