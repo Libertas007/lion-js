@@ -1,10 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Parser = void 0;
+const errors_1 = require("./errors");
 const lexer_1 = require("./lexer");
 const types_1 = require("./types");
 class Parser {
     constructor(tokens) {
+        this.finish = false;
         this.tokens = tokens.filter((token) => token.type !== lexer_1.TokenType.COMMA);
         this.pos = 0;
         this.currentToken = this.tokens[this.pos];
@@ -39,6 +41,9 @@ class Parser {
         this.expect(lexer_1.TokenType.LBRACE);
         while (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) !== lexer_1.TokenType.RBRACE) {
             const [key, value] = this.parsePair();
+            if (this.finish) {
+                return doc;
+            }
             doc[key] = value;
         }
         this.expect(lexer_1.TokenType.RBRACE);
@@ -104,16 +109,25 @@ class Parser {
     }
     expect(type, value) {
         var _a, _b, _c, _d;
+        if (!this.currentToken) {
+            errors_1.errors.addError(new errors_1.LionError(`Expected token type to be ${type} (got EOF)`, new lexer_1.Region(0, 0, 0, 0)));
+            this.finish = true;
+            return "";
+        }
         if (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) === type) {
             if (value && this.currentToken.value !== value) {
-                throw new Error(`Expected value to be ${value} (got ${this.currentToken.value}), region: ${this.currentToken.region}`);
+                errors_1.errors.addError(new errors_1.LionError(`Expected value to be ${value} (got ${this.currentToken.value})`, this.currentToken.region));
+                this.advance();
+                return "";
             }
             let val = this.currentToken.value;
             this.advance();
             return val;
         }
         else {
-            throw new Error(`Expected token type to be ${type} (got ${(_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type}), value: ${(_c = this.currentToken) === null || _c === void 0 ? void 0 : _c.value}, region: ${(_d = this.currentToken) === null || _d === void 0 ? void 0 : _d.region}`);
+            errors_1.errors.addError(new errors_1.LionError(`Expected token type to be ${type} (got ${(_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type})`, (_d = (_c = this.currentToken) === null || _c === void 0 ? void 0 : _c.region) !== null && _d !== void 0 ? _d : new lexer_1.Region(0, 0, 0, 0)));
+            this.advance();
+            return "";
         }
     }
 }

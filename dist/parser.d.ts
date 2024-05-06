@@ -4,6 +4,7 @@ export declare class Parser {
     tokens: Token[];
     private pos;
     private currentToken;
+    private finish;
     constructor(tokens: Token[]);
     parse(): LionDocument;
     private parseSchema;

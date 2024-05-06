@@ -1,3 +1,4 @@
+import { LionError, errors } from "./errors";
 import { LionValue } from "./types";
 
 const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -167,16 +168,44 @@ export class Lexer {
                     this.currentChar === "x" ||
                     this.currentChar === "o"
                 ) {
-                    if (isFloat && this.currentChar === ".") {
-                        throw new Error(
-                            `Invalid float at line ${this.line}, col ${this.col}`
+                    if (
+                        (isFloat || containsLetter) &&
+                        this.currentChar === "."
+                    ) {
+                        errors.addError(
+                            new LionError(
+                                "Invalid float.",
+                                new Region(
+                                    this.line,
+                                    this.line,
+                                    this.col,
+                                    this.col
+                                ),
+                                containsLetter
+                                    ? "A number marked as binary, hexadecimal or octal cannot contain a decimal point."
+                                    : "Multiple decimal points in a number. Try removing one."
+                            )
                         );
+                        return this.tokens;
                     }
 
-                    if (containsLetter && letters.includes(this.currentChar)) {
-                        throw new Error(
-                            `Invalid number at line ${this.line}, col ${this.col}`
+                    if (
+                        (containsLetter || isFloat) &&
+                        letters.includes(this.currentChar)
+                    ) {
+                        errors.addError(
+                            new LionError(
+                                "Invalid number.",
+                                new Region(
+                                    this.line,
+                                    this.line,
+                                    this.col,
+                                    this.col
+                                ),
+                                'Number contains letters. Numbers cannot contain letters except for prefixes "0x", "0b" and "0o".'
+                            )
                         );
+                        return this.tokens;
                     }
 
                     if (this.currentChar === ".") {

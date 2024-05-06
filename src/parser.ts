@@ -1,10 +1,13 @@
-import { Token, TokenType } from "./lexer";
+import { LionError, errors } from "./errors";
+import { Region, Token, TokenType } from "./lexer";
 import { DocumentPrimitive, LionDocument, LionValue } from "./types";
 
 export class Parser {
     public tokens: Token[];
     private pos: number;
     private currentToken: Token | null;
+
+    private finish: boolean = false;
 
     constructor(tokens: Token[]) {
         this.tokens = tokens.filter((token) => token.type !== TokenType.COMMA);
@@ -45,6 +48,9 @@ export class Parser {
         this.expect(TokenType.LBRACE);
         while (this.currentToken?.type !== TokenType.RBRACE) {
             const [key, value] = this.parsePair();
+            if (this.finish) {
+                return doc;
+            }
 
             doc[key] = value;
         }
@@ -110,20 +116,41 @@ export class Parser {
     }
 
     private expect(type: TokenType, value?: LionValue): LionValue {
+        if (!this.currentToken) {
+            errors.addError(
+                new LionError(
+                    `Expected token type to be ${type} (got EOF)`,
+                    new Region(0, 0, 0, 0)
+                )
+            );
+            this.finish = true;
+            return "";
+        }
+
         if (this.currentToken?.type === type) {
             if (value && this.currentToken.value !== value) {
-                throw new Error(
-                    `Expected value to be ${value} (got ${this.currentToken.value}), region: ${this.currentToken.region}`
+                errors.addError(
+                    new LionError(
+                        `Expected value to be ${value} (got ${this.currentToken.value})`,
+                        this.currentToken.region
+                    )
                 );
+                this.advance();
+                return "";
             }
             let val = this.currentToken.value;
             this.advance();
 
             return val;
         } else {
-            throw new Error(
-                `Expected token type to be ${type} (got ${this.currentToken?.type}), value: ${this.currentToken?.value}, region: ${this.currentToken?.region}`
+            errors.addError(
+                new LionError(
+                    `Expected token type to be ${type} (got ${this.currentToken?.type})`,
+                    this.currentToken?.region ?? new Region(0, 0, 0, 0)
+                )
             );
+            this.advance();
+            return "";
         }
     }
 }

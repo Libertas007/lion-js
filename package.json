@@ -8,6 +8,14 @@
         "./dist"
     ],
     "author": "Libertas",
+    "license": "MIT",
+    "scripts": {
+        "build": "tsc"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Libertas007/lion-js"
+    },
     "devDependencies": {
         "typescript": "^5.4.5"
     }
