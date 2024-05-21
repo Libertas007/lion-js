@@ -1,4 +1,4 @@
-import { LionValue } from "./types";
+import { ValuePrimitive } from "./types";
 export declare class Lexer {
     text: string;
     private pos;
@@ -13,9 +13,9 @@ export declare class Lexer {
 }
 export declare class Token {
     type: TokenType;
-    value: LionValue;
+    value: ValuePrimitive;
     region: Region;
-    constructor(type: TokenType, value: LionValue, region: Region);
+    constructor(type: TokenType, value: ValuePrimitive, region: Region);
 }
 export declare class Region {
     startLine: number;

@@ -1,6 +1,6 @@
 import { LionError, errors } from "./errors";
 import { Region, Token, TokenType } from "./lexer";
-import { DocumentPrimitive, LionDocument, LionValue } from "./types";
+import { DocumentComponent, LionDocument, ValuePrimitive } from "./types";
 
 export class Parser {
     public tokens: Token[];
@@ -43,8 +43,8 @@ export class Parser {
         return schema;
     }
 
-    private parseDoc(): DocumentPrimitive {
-        const doc: DocumentPrimitive = {};
+    private parseDoc(): DocumentComponent {
+        const doc = new DocumentComponent();
         this.expect(TokenType.LBRACE);
         while (this.currentToken?.type !== TokenType.RBRACE) {
             const [key, value] = this.parsePair();
@@ -52,7 +52,7 @@ export class Parser {
                 return doc;
             }
 
-            doc[key] = value;
+            doc.set(key, value);
         }
 
         this.expect(TokenType.RBRACE);
@@ -60,7 +60,7 @@ export class Parser {
         return doc;
     }
 
-    private parsePair(): [string, LionValue] {
+    private parsePair(): [string, DocumentComponent] {
         const key = this.currentToken?.value;
         this.expect(TokenType.IDENTIFIER);
         this.expect(TokenType.COLON);
@@ -69,26 +69,30 @@ export class Parser {
         return [key?.toString() || "", value];
     }
 
-    private parseValue(): LionValue {
+    private parseValue(): DocumentComponent {
         if (this.currentToken?.type === TokenType.STRING) {
-            return this.currentToken.value;
+            return new DocumentComponent(this.currentToken.value);
         } else if (this.currentToken?.type === TokenType.INTEGER) {
-            return parseInt(this.currentToken.value?.toString() || "");
+            return new DocumentComponent(
+                parseInt(this.currentToken.value?.toString() || "")
+            );
         } else if (this.currentToken?.type === TokenType.FLOAT) {
-            return parseFloat(this.currentToken.value?.toString() || "");
+            return new DocumentComponent(
+                parseFloat(this.currentToken.value?.toString() || "")
+            );
         } else if (this.currentToken?.type === TokenType.BOOLEAN) {
-            return this.currentToken.value === "true";
+            return new DocumentComponent(this.currentToken.value === "true");
         } else if (this.currentToken?.type === TokenType.LBRACKET) {
             return this.parseArray();
         } else if (this.currentToken?.type === TokenType.LBRACE) {
             return this.parseDoc();
         }
 
-        return "";
+        return new DocumentComponent();
     }
 
-    private parseArray(): LionValue[] {
-        const array: LionValue[] = [];
+    private parseArray(): DocumentComponent {
+        const array: DocumentComponent[] = [];
         this.expect(TokenType.LBRACKET);
         while (this.currentToken?.type !== TokenType.RBRACKET) {
             const value = this.parseValue();
@@ -98,7 +102,7 @@ export class Parser {
 
         this.expect(TokenType.RBRACKET);
         this.unadvance();
-        return array;
+        return DocumentComponent.fromArray(array);
     }
 
     private advance() {
@@ -115,7 +119,7 @@ export class Parser {
         this.currentToken = this.tokens[this.pos];
     }
 
-    private expect(type: TokenType, value?: LionValue): LionValue {
+    private expect(type: TokenType, value?: ValuePrimitive): ValuePrimitive {
         if (!this.currentToken) {
             errors.addError(
                 new LionError(

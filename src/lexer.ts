@@ -1,5 +1,5 @@
 import { LionError, errors } from "./errors";
-import { LionValue } from "./types";
+import { ValuePrimitive } from "./types";
 
 const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -334,10 +334,10 @@ export class Lexer {
 
 export class Token {
     public type: TokenType;
-    public value: LionValue;
+    public value: ValuePrimitive;
     public region: Region;
 
-    constructor(type: TokenType, value: LionValue, region: Region) {
+    constructor(type: TokenType, value: ValuePrimitive, region: Region) {
         this.type = type;
         this.value = value;
         this.region = region;

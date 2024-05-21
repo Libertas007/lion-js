@@ -37,14 +37,14 @@ class Parser {
     }
     parseDoc() {
         var _a;
-        const doc = {};
+        const doc = new types_1.DocumentComponent();
         this.expect(lexer_1.TokenType.LBRACE);
         while (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) !== lexer_1.TokenType.RBRACE) {
             const [key, value] = this.parsePair();
             if (this.finish) {
                 return doc;
             }
-            doc[key] = value;
+            doc.set(key, value);
         }
         this.expect(lexer_1.TokenType.RBRACE);
         this.unadvance();
@@ -62,16 +62,16 @@ class Parser {
     parseValue() {
         var _a, _b, _c, _d, _e, _f, _g, _h;
         if (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) === lexer_1.TokenType.STRING) {
-            return this.currentToken.value;
+            return new types_1.DocumentComponent(this.currentToken.value);
         }
         else if (((_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type) === lexer_1.TokenType.INTEGER) {
-            return parseInt(((_c = this.currentToken.value) === null || _c === void 0 ? void 0 : _c.toString()) || "");
+            return new types_1.DocumentComponent(parseInt(((_c = this.currentToken.value) === null || _c === void 0 ? void 0 : _c.toString()) || ""));
         }
         else if (((_d = this.currentToken) === null || _d === void 0 ? void 0 : _d.type) === lexer_1.TokenType.FLOAT) {
-            return parseFloat(((_e = this.currentToken.value) === null || _e === void 0 ? void 0 : _e.toString()) || "");
+            return new types_1.DocumentComponent(parseFloat(((_e = this.currentToken.value) === null || _e === void 0 ? void 0 : _e.toString()) || ""));
         }
         else if (((_f = this.currentToken) === null || _f === void 0 ? void 0 : _f.type) === lexer_1.TokenType.BOOLEAN) {
-            return this.currentToken.value === "true";
+            return new types_1.DocumentComponent(this.currentToken.value === "true");
         }
         else if (((_g = this.currentToken) === null || _g === void 0 ? void 0 : _g.type) === lexer_1.TokenType.LBRACKET) {
             return this.parseArray();
@@ -79,7 +79,7 @@ class Parser {
         else if (((_h = this.currentToken) === null || _h === void 0 ? void 0 : _h.type) === lexer_1.TokenType.LBRACE) {
             return this.parseDoc();
         }
-        return "";
+        return new types_1.DocumentComponent();
     }
     parseArray() {
         var _a;
@@ -92,7 +92,7 @@ class Parser {
         }
         this.expect(lexer_1.TokenType.RBRACKET);
         this.unadvance();
-        return array;
+        return types_1.DocumentComponent.fromArray(array);
     }
     advance() {
         this.pos += 1;
