@@ -68,7 +68,6 @@ export class Parser {
 
         this.pos = schemaEnd - 1;
         this.advance();
-        console.log(this.tokens.slice(this.pos));
         return schema;
     }
 
@@ -229,18 +228,14 @@ export class SchemaParser {
         this.expect(TokenType.MODIFIER, "@definition");
         const schema = this.parseSchema();
 
-        console.log({ schema });
-
         while (this.currentToken?.type !== TokenType.EOF) {
             this.expect(TokenType.MODIFIER, "@subschema");
             const name = this.expect(TokenType.IDENTIFIER) as string;
             const subSchema = this.parseSchema();
-            console.log({ subSchema });
 
             TypeRegistry.instance.registerType(name, subSchema.toTypeCheck());
             TypeRegistry.instance.registerSubSchema(name, subSchema);
         }
-        console.log("finished");
         return schema;
     }
 

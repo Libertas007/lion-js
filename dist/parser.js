@@ -54,7 +54,6 @@ class Parser {
         const schema = parser.parse();
         this.pos = schemaEnd - 1;
         this.advance();
-        console.log(this.tokens.slice(this.pos));
         return schema;
     }
     parseDoc() {
@@ -177,16 +176,13 @@ class SchemaParser {
         var _a;
         this.expect(lexer_1.TokenType.MODIFIER, "@definition");
         const schema = this.parseSchema();
-        console.log({ schema });
         while (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) !== lexer_1.TokenType.EOF) {
             this.expect(lexer_1.TokenType.MODIFIER, "@subschema");
             const name = this.expect(lexer_1.TokenType.IDENTIFIER);
             const subSchema = this.parseSchema();
-            console.log({ subSchema });
             schema_1.TypeRegistry.instance.registerType(name, subSchema.toTypeCheck());
             schema_1.TypeRegistry.instance.registerSubSchema(name, subSchema);
         }
-        console.log("finished");
         return schema;
     }
     parseSchema() {
