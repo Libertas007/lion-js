@@ -19,22 +19,50 @@ class Schema {
     addComponent(name, component) {
         this.components.set(name, component);
     }
-    validate(value) {
-        if (value.isSingleValue())
+    validate(value, process = false, clear = true) {
+        if (value.isSingleValue()) {
+            errors_1.errors.addError(new errors_1.LionError(`Expected object, got single value`, value.region || new lexer_1.Region(0, 0, 0, 0)));
+            if (process) {
+                errors_1.errors.process();
+            }
+            if (clear) {
+                errors_1.errors.errors = [];
+            }
             return false;
-        if (value.size !== this.components.size)
+        }
+        if (value.size !== this.components.size) {
+            errors_1.errors.addError(new errors_1.LionError(`Expected ${this.components.size} keys, got ${value.size}`, value.region || new lexer_1.Region(0, 0, 0, 0)));
+            if (process) {
+                errors_1.errors.process();
+            }
+            if (clear) {
+                errors_1.errors.errors = [];
+            }
             return false;
+        }
         for (const [key, component] of this.components) {
             if (!value.has(key)) {
-                console.log("Missing key", key);
+                errors_1.errors.addError(new errors_1.LionError(`Expected key ${key} to be present.`, value.region || new lexer_1.Region(0, 0, 0, 0)));
+                if (process) {
+                    errors_1.errors.process();
+                }
+                if (clear) {
+                    errors_1.errors.errors = [];
+                }
                 return false;
             }
             if (!component.validate(value.get(key))) {
-                console.log("Invalid key", key);
-                // console.log(component, value.get(key));
+                errors_1.errors.addError(new errors_1.LionError(`Expected key ${key} to satisfy constrains of type ${component.type}.`, value.region || new lexer_1.Region(0, 0, 0, 0)));
+                if (process) {
+                    errors_1.errors.process();
+                }
+                if (clear) {
+                    errors_1.errors.errors = [];
+                }
                 return false;
             }
         }
+        errors_1.errors.errors = [];
         return true;
     }
     toTypeCheck() {
@@ -44,14 +72,38 @@ class Schema {
             return this.validate(value);
         };
     }
+    stringify() {
+        return `@definition {
+${Array.from(this.components)
+            .map(([key, value]) => `\t${key}: ${value.type}`)
+            .join(",\n")}
+}
+        
+${Array.from(TypeRegistry.instance.subSchemas)
+            .map(([key, value]) => value.stringifyAsSubSchema(key))
+            .join("\n")}
+`;
+    }
+    stringifyAsSubSchema(name) {
+        return `@subschema ${name} {
+${Array.from(this.components)
+            .map(([key, value]) => `\t${key}: ${value.type}`)
+            .join(",\n")}
+}       
+        `;
+    }
 }
 exports.Schema = Schema;
 class TypeRegistry {
     constructor() {
         this.types = new Map();
+        this.subSchemas = new Map();
     }
     registerType(name, check) {
         this.types.set(name, check);
+    }
+    registerSubSchema(name, schema) {
+        this.subSchemas.set(name, schema);
     }
     getTypeOrNull(type) {
         const [typeName, of] = this.extractType(type);
@@ -72,7 +124,7 @@ class TypeRegistry {
         // console.log({ type, value });
         const [typeName, of] = this.extractType(type);
         if (!this.hasType(typeName)) {
-            errors_1.errors.addError(new errors_1.LionError(`Type ${typeName} does not exist`, new lexer_1.Region(0, 0, 0, 0)));
+            errors_1.errors.addError(new errors_1.LionError(`Type ${typeName} does not exist`, value.region || new lexer_1.Region(0, 0, 0, 0)));
             return false;
         }
         const check = this.getType(typeName);

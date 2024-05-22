@@ -1,7 +1,7 @@
 import { LionError, errors } from "./errors";
 import { Lexer } from "./lexer";
-import { Parser } from "./parser";
-import { Schema, SchemaComponent, TypeRegistry } from "./schema";
+import { Parser, SchemaParser } from "./parser";
+import { Schema } from "./schema";
 import { LionDocument } from "./types";
 
 export function parseText(text: string): LionDocument {
@@ -27,7 +27,11 @@ export function analyzeText(text: string): LionError[] {
 
     const parser = new Parser(lexer.process());
 
-    parser.parse();
+    const doc = parser.parse();
+
+    if (doc.hasSchema) {
+        doc.schema.validate(doc.doc, false, false);
+    }
 
     const final = errors.errors;
 
@@ -44,35 +48,42 @@ export function parseTextOrNull(text: string): LionDocument | null {
     }
 }
 
-const text = `
-@doc {
-    title: "My Document",
-    description: "This is a document",
-    version: 1,
-    example: [{
-        name: "John Doe",
-        age: 30,
-        isStudent: true,
-        grades: [100, 90, 80],
-    }],
-    test: [[1, 2, 3], [4, 5, 6]],
+export function parseSchema(text: string): Schema {
+    const lexer = new Lexer(text);
+
+    const parser = new SchemaParser(lexer.process());
+
+    const schema = parser.parse();
+
+    errors.process();
+
+    errors.errors = [];
+
+    return schema;
 }
-`;
 
-const schema = new Schema();
-schema.addComponent("title", new SchemaComponent("String"));
-schema.addComponent("description", new SchemaComponent("String"));
-schema.addComponent("version", new SchemaComponent("Number"));
-schema.addComponent("test", new SchemaComponent("Array<Array<Integer>>"));
-const userSchema = new Schema();
-userSchema.addComponent("name", new SchemaComponent("String"));
-userSchema.addComponent("age", new SchemaComponent("Number"));
-userSchema.addComponent("isStudent", new SchemaComponent("Boolean"));
-userSchema.addComponent("grades", new SchemaComponent("Array<Integer>"));
+export function parseSchemaOrNull(text: string): Schema | null {
+    try {
+        return parseSchema(text);
+    } catch (e) {
+        return null;
+    }
+}
 
-TypeRegistry.instance.registerType("User", userSchema.toTypeCheck());
+export function analyzeSchema(text: string): LionError[] {
+    const lexer = new Lexer(text);
 
-schema.addComponent("example", new SchemaComponent("Array<User>"));
+    const parser = new SchemaParser(lexer.process());
 
-const doc = parseText(text);
-console.log(schema.validate(doc.doc));
+    parser.parse();
+
+    const final = errors.errors;
+
+    errors.errors = [];
+
+    return final;
+}
+
+export function stringifySchema(schema: Schema): string {
+    return schema.stringify();
+}

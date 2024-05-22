@@ -25,22 +25,76 @@ export class Schema {
         this.components.set(name, component);
     }
 
-    public validate(value: DocumentComponent): boolean {
-        if (value.isSingleValue()) return false;
-        if (value.size !== this.components.size) return false;
+    public validate(
+        value: DocumentComponent,
+        process: boolean = false,
+        clear: boolean = true
+    ): boolean {
+        if (value.isSingleValue()) {
+            errors.addError(
+                new LionError(
+                    `Expected object, got single value`,
+                    value.region || new Region(0, 0, 0, 0)
+                )
+            );
+            if (process) {
+                errors.process();
+            }
+            if (clear) {
+                errors.errors = [];
+            }
+            return false;
+        }
+        if (value.size !== this.components.size) {
+            errors.addError(
+                new LionError(
+                    `Expected ${this.components.size} keys, got ${value.size}`,
+                    value.region || new Region(0, 0, 0, 0)
+                )
+            );
+            if (process) {
+                errors.process();
+            }
+            if (clear) {
+                errors.errors = [];
+            }
+            return false;
+        }
 
         for (const [key, component] of this.components) {
             if (!value.has(key)) {
-                console.log("Missing key", key);
+                errors.addError(
+                    new LionError(
+                        `Expected key ${key} to be present.`,
+                        value.region || new Region(0, 0, 0, 0)
+                    )
+                );
+                if (process) {
+                    errors.process();
+                }
+                if (clear) {
+                    errors.errors = [];
+                }
                 return false;
             }
             if (!component.validate(value.get(key) as DocumentComponent)) {
-                console.log("Invalid key", key);
-                // console.log(component, value.get(key));
+                errors.addError(
+                    new LionError(
+                        `Expected key ${key} to satisfy constrains of type ${component.type}.`,
+                        value.region || new Region(0, 0, 0, 0)
+                    )
+                );
+                if (process) {
+                    errors.process();
+                }
+                if (clear) {
+                    errors.errors = [];
+                }
                 return false;
             }
         }
 
+        errors.errors = [];
         return true;
     }
 
@@ -50,19 +104,47 @@ export class Schema {
             return this.validate(value);
         };
     }
+
+    public stringify(): string {
+        return `@definition {
+${Array.from(this.components)
+    .map(([key, value]) => `\t${key}: ${value.type}`)
+    .join(",\n")}
+}
+        
+${Array.from(TypeRegistry.instance.subSchemas)
+    .map(([key, value]) => value.stringifyAsSubSchema(key))
+    .join("\n")}
+`;
+    }
+
+    public stringifyAsSubSchema(name: string): string {
+        return `@subschema ${name} {
+${Array.from(this.components)
+    .map(([key, value]) => `\t${key}: ${value.type}`)
+    .join(",\n")}
+}       
+        `;
+    }
 }
 
 export class TypeRegistry {
     public static instance = new TypeRegistry();
 
     public types: Map<string, TypeCheck>;
+    public subSchemas: Map<string, Schema>;
 
     private constructor() {
         this.types = new Map();
+        this.subSchemas = new Map();
     }
 
     public registerType(name: string, check: TypeCheck) {
         this.types.set(name, check);
+    }
+
+    public registerSubSchema(name: string, schema: Schema) {
+        this.subSchemas.set(name, schema);
     }
 
     public getTypeOrNull(type: string): TypeCheck | null {
@@ -98,7 +180,7 @@ export class TypeRegistry {
             errors.addError(
                 new LionError(
                     `Type ${typeName} does not exist`,
-                    new Region(0, 0, 0, 0)
+                    value.region || new Region(0, 0, 0, 0)
                 )
             );
             return false;

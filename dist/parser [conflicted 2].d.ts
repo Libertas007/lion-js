@@ -20,7 +20,7 @@ export declare class Parser {
 export declare class SchemaParser {
     tokens: Token[];
     protected pos: number;
-    protected currentToken: Token;
+    protected currentToken: Token | null;
     protected finish: boolean;
     constructor(tokens: Token[]);
     parse(): Schema;

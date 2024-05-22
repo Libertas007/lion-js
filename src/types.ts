@@ -1,10 +1,17 @@
+import { Region } from "./lexer";
+import { Schema } from "./schema";
+
 export type ValuePrimitive = number | string | boolean;
 
 export class LionDocument {
     public doc: DocumentComponent;
+    public schema: Schema;
+    public hasSchema = false;
 
-    constructor(document: DocumentComponent) {
+    constructor(document: DocumentComponent, schema?: Schema) {
         this.doc = document;
+        this.schema = schema || new Schema();
+        this.hasSchema = schema !== undefined;
     }
 
     public get(key: string) {
@@ -15,42 +22,51 @@ export class LionDocument {
         this.doc.set(key, new DocumentComponent(value));
     }
 
+    public validate(silent = true): boolean {
+        return this.schema.validate(this.doc, !silent, true);
+    }
+
     public stringify() {
-        let text = "@doc {\n";
+        let text = "";
+
+        if (this.hasSchema) {
+            text += "@schema {\n";
+            text += this.schema.stringify();
+            text += "}\n";
+        }
+
+        text += "@doc {\n";
         this.doc.forEach((value, key) => {
-            text += `  ${key}: ${this.stringifyValue(value)},\n`;
+            text += `\t${key}: ${this.stringifyValue(value)},\n`;
         });
 
         return text + "}";
     }
 
-    private stringifyValue(value: ValuePrimitive | any): string {
-        if (Array.isArray(value)) {
-            return `[${value.map((e) => this.stringifyValue(e)).join(", ")}]`;
+    private stringifyValue(value: DocumentComponent): string {
+        if (value.isArray) {
+            return `[${value
+                .toArray()
+                .map((e) => this.stringifyValue(e))
+                .join(", ")}]`;
         }
 
-        if (typeof value === "object") {
-            return this.stringifyObject(value);
+        if (value.isSingleValue()) {
+            if (typeof value.get() === "string") {
+                return `"${value.get()}"`;
+            }
+            return value.get().toString();
         }
 
-        if (typeof value === "string") {
-            return `"${value}"`;
-        }
-
-        return value.toString();
+        return this.stringifyObject(value);
     }
 
-    private stringifyObject(obj: Object | DocumentComponent): string {
+    private stringifyObject(obj: DocumentComponent): string {
         let text = "{\n";
-        if (obj instanceof DocumentComponent) {
-            obj.forEach((value, key) => {
-                text += `  ${key}: ${this.stringifyValue(value)},\n`;
-            });
-        } else {
-            Object.entries(obj).forEach(([key, value]) => {
-                text += `  ${key}: ${this.stringifyValue(value)},\n`;
-            });
-        }
+        obj.forEach((value, key) => {
+            text += `  ${key}: ${this.stringifyValue(value)},\n`;
+        });
+
         text += "}";
 
         return text;
@@ -60,10 +76,12 @@ export class LionDocument {
 export class DocumentComponent extends Map<string, DocumentComponent> {
     private value?: ValuePrimitive;
     public isArray = false;
+    public region?: Region;
 
-    constructor(value?: ValuePrimitive) {
+    constructor(value?: ValuePrimitive, region?: Region) {
         super();
         this.value = value;
+        this.region = region;
     }
 
     public isSingleValue(): boolean {
@@ -75,6 +93,10 @@ export class DocumentComponent extends Map<string, DocumentComponent> {
         array.forEach((value, index) => doc.set(index.toString(), value));
         doc.isArray = true;
         return doc;
+    }
+
+    public toArray(): DocumentComponent[] {
+        return Array.from(this.values());
     }
 
     public get(): ValuePrimitive;

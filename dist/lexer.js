@@ -49,6 +49,16 @@ class Lexer {
                 this.advance();
                 continue;
             }
+            if (this.currentChar === "<") {
+                this.tokens.push(new Token(TokenType.OF_TYPE_START, "<", new Region(this.line, this.line, this.col, this.col)));
+                this.advance();
+                continue;
+            }
+            if (this.currentChar === ">") {
+                this.tokens.push(new Token(TokenType.OF_TYPE_END, ">", new Region(this.line, this.line, this.col, this.col)));
+                this.advance();
+                continue;
+            }
             if (this.currentChar === ":") {
                 this.tokens.push(new Token(TokenType.COLON, ":", new Region(this.line, this.line, this.col, this.col)));
                 this.advance();
@@ -164,6 +174,7 @@ class Lexer {
             }
             this.advance();
         }
+        this.tokens.push(new Token(TokenType.EOF, "", new Region(this.line, this.line, this.col, this.col)));
         return this.tokens;
     }
     skipWhitespace() {
@@ -201,6 +212,9 @@ class Region {
     toString() {
         return `(${this.startLine}, ${this.startCol}) - (${this.endLine}, ${this.endCol})`;
     }
+    combine(region) {
+        return new Region(Math.min(this.startLine, region.startLine), Math.max(this.endLine, region.endLine), Math.min(this.startCol, region.startCol), Math.max(this.endCol, region.endCol));
+    }
 }
 exports.Region = Region;
 var TokenType;
@@ -217,4 +231,7 @@ var TokenType;
     TokenType["COMMA"] = "COMMA";
     TokenType["IDENTIFIER"] = "IDENTIFIER";
     TokenType["MODIFIER"] = "MODIFIER";
+    TokenType["OF_TYPE_START"] = "OF_TYPE_START";
+    TokenType["OF_TYPE_END"] = "OF_TYPE_END";
+    TokenType["EOF"] = "EOF";
 })(TokenType || (exports.TokenType = TokenType = {}));

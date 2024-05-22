@@ -24,6 +24,7 @@ export declare class Region {
     endCol: number;
     constructor(startLine: number, endLine: number, startCol: number, endCol: number);
     toString(): string;
+    combine(region: Region): Region;
 }
 export declare enum TokenType {
     INTEGER = "INTEGER",
@@ -37,5 +38,8 @@ export declare enum TokenType {
     COLON = "COLON",
     COMMA = "COMMA",
     IDENTIFIER = "IDENTIFIER",
-    MODIFIER = "MODIFIER"
+    MODIFIER = "MODIFIER",
+    OF_TYPE_START = "OF_TYPE_START",
+    OF_TYPE_END = "OF_TYPE_END",
+    EOF = "EOF"
 }

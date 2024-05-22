@@ -8,61 +8,39 @@ const types_1 = require("./types");
 class Parser {
     constructor(tokens) {
         this.finish = false;
-        this.tokens = tokens;
+        this.tokens = tokens.filter((token) => token.type !== lexer_1.TokenType.COMMA);
         this.pos = 0;
         this.currentToken = this.tokens[this.pos];
     }
     parse() {
         var _a, _b;
-        let schema = new schema_1.Schema();
-        let hasSchema = false;
         if (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) === lexer_1.TokenType.MODIFIER &&
             this.currentToken.value === "@schema") {
-            schema = this.parseSchema();
-            hasSchema = true;
+            const schema = this.parseSchema();
         }
         if (((_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type) === lexer_1.TokenType.MODIFIER &&
             this.currentToken.value === "@doc") {
-            this.expect(lexer_1.TokenType.MODIFIER, "@doc");
+            this.advance();
             const doc = this.parseDoc();
-            if (hasSchema) {
-                return new types_1.LionDocument(doc, schema);
-            }
             return new types_1.LionDocument(doc);
         }
         else {
             const doc = this.parseDoc();
-            if (hasSchema) {
-                return new types_1.LionDocument(doc, schema);
-            }
             return new types_1.LionDocument(doc);
         }
     }
     parseSchema() {
         var _a;
         this.expect(lexer_1.TokenType.MODIFIER, "@schema");
-        if (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) === lexer_1.TokenType.STRING) {
-            console.warn("Schema by name is not supported yet");
-            return new schema_1.Schema();
-        }
-        this.expect(lexer_1.TokenType.LBRACE);
-        const schemaEnd = this.tokens.findIndex((token) => token.type === lexer_1.TokenType.MODIFIER && token.value === "@doc");
-        const parser = new SchemaParser([
-            ...this.tokens.slice(this.pos, schemaEnd - 1),
-            new lexer_1.Token(lexer_1.TokenType.EOF, "", new lexer_1.Region(0, 0, 0, 0)),
-        ]);
-        const schema = parser.parse();
-        this.pos = schemaEnd - 1;
-        this.advance();
-        console.log(this.tokens.slice(this.pos));
+        const schema = (_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.value;
+        this.expect(lexer_1.TokenType.STRING);
         return schema;
     }
     parseDoc() {
-        var _a, _b, _c;
+        var _a;
         const doc = new types_1.DocumentComponent();
-        const start = (_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.region;
         this.expect(lexer_1.TokenType.LBRACE);
-        while (((_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type) !== lexer_1.TokenType.RBRACE) {
+        while (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) !== lexer_1.TokenType.RBRACE) {
             const [key, value] = this.parsePair();
             if (this.finish) {
                 return doc;
@@ -71,34 +49,30 @@ class Parser {
         }
         this.expect(lexer_1.TokenType.RBRACE);
         this.unadvance();
-        doc.region = start === null || start === void 0 ? void 0 : start.combine(((_c = this.currentToken) === null || _c === void 0 ? void 0 : _c.region) || new lexer_1.Region(0, 0, 0, 0));
         return doc;
     }
     parsePair() {
-        var _a, _b;
+        var _a;
         const key = (_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.value;
         this.expect(lexer_1.TokenType.IDENTIFIER);
         this.expect(lexer_1.TokenType.COLON);
         const value = this.parseValue();
         this.advance();
-        if (((_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type) === lexer_1.TokenType.COMMA) {
-            this.advance();
-        }
         return [(key === null || key === void 0 ? void 0 : key.toString()) || "", value];
     }
     parseValue() {
         var _a, _b, _c, _d, _e, _f, _g, _h;
         if (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) === lexer_1.TokenType.STRING) {
-            return new types_1.DocumentComponent(this.currentToken.value, this.currentToken.region);
+            return new types_1.DocumentComponent(this.currentToken.value);
         }
         else if (((_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type) === lexer_1.TokenType.INTEGER) {
-            return new types_1.DocumentComponent(parseInt(((_c = this.currentToken.value) === null || _c === void 0 ? void 0 : _c.toString()) || ""), this.currentToken.region);
+            return new types_1.DocumentComponent(parseInt(((_c = this.currentToken.value) === null || _c === void 0 ? void 0 : _c.toString()) || ""));
         }
         else if (((_d = this.currentToken) === null || _d === void 0 ? void 0 : _d.type) === lexer_1.TokenType.FLOAT) {
-            return new types_1.DocumentComponent(parseFloat(((_e = this.currentToken.value) === null || _e === void 0 ? void 0 : _e.toString()) || ""), this.currentToken.region);
+            return new types_1.DocumentComponent(parseFloat(((_e = this.currentToken.value) === null || _e === void 0 ? void 0 : _e.toString()) || ""));
         }
         else if (((_f = this.currentToken) === null || _f === void 0 ? void 0 : _f.type) === lexer_1.TokenType.BOOLEAN) {
-            return new types_1.DocumentComponent(this.currentToken.value === "true", this.currentToken.region);
+            return new types_1.DocumentComponent(this.currentToken.value === "true");
         }
         else if (((_g = this.currentToken) === null || _g === void 0 ? void 0 : _g.type) === lexer_1.TokenType.LBRACKET) {
             return this.parseArray();
@@ -109,24 +83,17 @@ class Parser {
         return new types_1.DocumentComponent();
     }
     parseArray() {
-        var _a, _b, _c, _d;
+        var _a;
         const array = [];
-        const start = (_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.region;
         this.expect(lexer_1.TokenType.LBRACKET);
-        while (((_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type) !== lexer_1.TokenType.RBRACKET) {
+        while (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) !== lexer_1.TokenType.RBRACKET) {
             const value = this.parseValue();
             array.push(value);
             this.advance();
-            if (((_c = this.currentToken) === null || _c === void 0 ? void 0 : _c.type) === lexer_1.TokenType.COMMA) {
-                this.advance();
-            }
         }
         this.expect(lexer_1.TokenType.RBRACKET);
         this.unadvance();
-        const region = start === null || start === void 0 ? void 0 : start.combine(((_d = this.currentToken) === null || _d === void 0 ? void 0 : _d.region) || new lexer_1.Region(0, 0, 0, 0));
-        const component = types_1.DocumentComponent.fromArray(array);
-        component.region = region;
-        return component;
+        return types_1.DocumentComponent.fromArray(array);
     }
     advance() {
         this.pos += 1;
@@ -184,9 +151,8 @@ class SchemaParser {
             const subSchema = this.parseSchema();
             console.log({ subSchema });
             schema_1.TypeRegistry.instance.registerType(name, subSchema.toTypeCheck());
-            schema_1.TypeRegistry.instance.registerSubSchema(name, subSchema);
+            this.advance();
         }
-        console.log("finished");
         return schema;
     }
     parseSchema() {
@@ -197,8 +163,8 @@ class SchemaParser {
             ((_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type) !== lexer_1.TokenType.EOF) {
             const [key, value] = this.parsePair();
             schema.addComponent(key, value);
+            // console.log({ key, value });
         }
-        this.expect(lexer_1.TokenType.RBRACE);
         return schema;
     }
     parsePair() {
@@ -211,20 +177,28 @@ class SchemaParser {
         return [(key === null || key === void 0 ? void 0 : key.toString()) || "", new schema_1.SchemaComponent(value)];
     }
     parseType() {
-        var _a;
+        var _a, _b, _c, _d;
         let type = "";
         type += this.expect(lexer_1.TokenType.IDENTIFIER);
-        if (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) === lexer_1.TokenType.OF_TYPE_START) {
-            type += this.expect(lexer_1.TokenType.OF_TYPE_START);
-            type += this.parseType();
-            type += this.expect(lexer_1.TokenType.OF_TYPE_END);
+        while (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) !== lexer_1.TokenType.COMMA &&
+            ((_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type) !== lexer_1.TokenType.EOF &&
+            this.currentToken) {
+            console.log(this.currentToken);
+            if (((_c = this.currentToken) === null || _c === void 0 ? void 0 : _c.type) === lexer_1.TokenType.OF_TYPE_START ||
+                ((_d = this.currentToken) === null || _d === void 0 ? void 0 : _d.type) === lexer_1.TokenType.OF_TYPE_END) {
+                type += this.currentToken.value;
+                this.advance();
+                continue;
+            }
+            type += this.expect(lexer_1.TokenType.IDENTIFIER);
+            this.advance();
         }
         return type;
     }
     advance() {
         this.pos += 1;
         if (this.pos > this.tokens.length - 1) {
-            this.currentToken = new lexer_1.Token(lexer_1.TokenType.EOF, "", new lexer_1.Region(0, 0, 0, 0));
+            this.currentToken = null;
         }
         else {
             this.currentToken = this.tokens[this.pos];
