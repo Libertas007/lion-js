@@ -14,7 +14,7 @@ export class LionDocument {
         this.hasSchema = schema !== undefined;
     }
 
-    public get(key: string) {
+    public get(key: string): DocumentComponent | ValuePrimitive | undefined {
         return this.doc.get(key);
     }
 
@@ -26,7 +26,7 @@ export class LionDocument {
         return this.schema.validate(this.doc, !silent, true);
     }
 
-    public stringify() {
+    public stringify(): string {
         let text = "";
 
         if (this.hasSchema) {

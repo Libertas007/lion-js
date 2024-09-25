@@ -11,7 +11,7 @@ export class LionError {
         this.description = description || "";
     }
 
-    public toString() {
+    public toString(): string {
         if (this.description) {
             return `${this.message} at ${this.region.startLine}:${this.region.startCol}\n${this.description}`;
         }
@@ -39,7 +39,7 @@ class LionErrorList {
         }
     }
 
-    public toString() {
+    public toString(): string {
         return this.errors.map((error) => error.toString()).join("\n");
     }
 

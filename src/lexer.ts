@@ -391,7 +391,7 @@ export class Region {
         this.endCol = endCol;
     }
 
-    public toString() {
+    public toString(): string {
         return `(${this.startLine}, ${this.startCol}) - (${this.endLine}, ${this.endCol})`;
     }
 
