@@ -4,7 +4,6 @@
     "description": "Libertas Object Notation parser",
     "main": "./dist/main.js",
     "types": "./dist/main.d.ts",
-    "type": "module",
     "files": [
         "./dist"
     ],
