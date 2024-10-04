@@ -1,5 +1,15 @@
 import { Region } from "./lexer";
 
+/**
+ * Represents an error specific to the Lion format.
+ *
+ * @remarks
+ * This class is used to encapsulate error details including a message,
+ * the region where the error occurred, and an optional description.
+ *
+ *
+ * @public
+ */
 export class LionError {
     public message: string;
     public region: Region;

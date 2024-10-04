@@ -1,9 +1,10 @@
 {
     "name": "lion-parser",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "description": "Libertas Object Notation parser",
     "main": "./dist/main.js",
     "types": "./dist/main.d.ts",
+    "type": "module",
     "files": [
         "./dist"
     ],

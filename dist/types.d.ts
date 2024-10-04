@@ -6,7 +6,7 @@ export declare class LionDocument {
     schema: Schema;
     hasSchema: boolean;
     constructor(document: DocumentComponent, schema?: Schema);
-    get(key: string): DocumentComponent | undefined;
+    get(key: string): DocumentComponent | ValuePrimitive | undefined;
     set(key: string, value: ValuePrimitive): void;
     validate(silent?: boolean): boolean;
     stringify(): string;

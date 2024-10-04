@@ -175,7 +175,7 @@ export class Parser {
         if (!this.currentToken) {
             errors.addError(
                 new LionError(
-                    `Expected token type to be ${type} (got EOF)`,
+                    `Expected the token type to be '${type}' (got EOF).`,
                     new Region(0, 0, 0, 0)
                 )
             );
@@ -187,7 +187,7 @@ export class Parser {
             if (value && this.currentToken.value !== value) {
                 errors.addError(
                     new LionError(
-                        `Expected value to be ${value} (got ${this.currentToken.value})`,
+                        `Expected the value to be '${value}' (got ${this.currentToken.value}).`,
                         this.currentToken.region
                     )
                 );
@@ -201,7 +201,7 @@ export class Parser {
         } else {
             errors.addError(
                 new LionError(
-                    `Expected token type to be ${type} (got ${this.currentToken?.type})`,
+                    `Expected the token type to be '${type}' (got ${this.currentToken?.type}).`,
                     this.currentToken?.region ?? new Region(0, 0, 0, 0)
                 )
             );
@@ -296,7 +296,7 @@ export class SchemaParser {
         if (!this.currentToken) {
             errors.addError(
                 new LionError(
-                    `Expected token type to be ${type} (got EOF)`,
+                    `Expected the token type to be '${type}' (got EOF).`,
                     new Region(0, 0, 0, 0)
                 )
             );
@@ -308,7 +308,7 @@ export class SchemaParser {
             if (value && this.currentToken.value !== value) {
                 errors.addError(
                     new LionError(
-                        `Expected value to be ${value} (got ${this.currentToken.value})`,
+                        `Expected the value to be '${value}' (got ${this.currentToken.value}).`,
                         this.currentToken.region
                     )
                 );
@@ -322,7 +322,7 @@ export class SchemaParser {
         } else {
             errors.addError(
                 new LionError(
-                    `Expected token type to be ${type} (got ${this.currentToken?.type})`,
+                    `Expected the token type to be '${type}' (got ${this.currentToken?.type}).`,
                     this.currentToken?.region ?? new Region(0, 0, 0, 0)
                 )
             );

@@ -2,6 +2,9 @@ import { LionError, errors } from "./errors";
 import { Region } from "./lexer";
 import { DocumentComponent } from "./types";
 
+/**
+ * Represents a schema component that can validate a document component against a specified type.
+ */
 export class SchemaComponent {
     public type: string;
 
@@ -14,6 +17,9 @@ export class SchemaComponent {
     }
 }
 
+/**
+ * Represents a schema.
+ */
 export class Schema {
     public components: Map<string, SchemaComponent>;
 
@@ -33,65 +39,57 @@ export class Schema {
         if (value.isSingleValue()) {
             errors.addError(
                 new LionError(
-                    `Expected object, got single value`,
+                    `Expected an object, got a single value.`,
                     value.region || new Region(0, 0, 0, 0)
                 )
             );
-            if (process) {
-                errors.process();
-            }
-            if (clear) {
-                errors.errors = [];
-            }
-            return false;
         }
-        if (value.size !== this.components.size) {
+        if (value.size < this.components.size) {
             errors.addError(
                 new LionError(
-                    `Expected ${this.components.size} keys, got ${value.size}`,
+                    `Expected ${this.components.size} keys, got ${value.size}.`,
                     value.region || new Region(0, 0, 0, 0)
                 )
             );
-            if (process) {
-                errors.process();
+        }
+
+        if (value.size > this.components.size) {
+            let differentKeys = Array.from(value.keys()).filter(
+                (x) => !this.components.has(x)
+            );
+
+            for (const key of differentKeys) {
+                errors.addError(
+                    new LionError(
+                        `Unexpected key '${key}'.`,
+                        value.get(key)?.region || new Region(0, 0, 0, 0)
+                    )
+                );
             }
-            if (clear) {
-                errors.errors = [];
-            }
-            return false;
         }
 
         for (const [key, component] of this.components) {
             if (!value.has(key)) {
                 errors.addError(
                     new LionError(
-                        `Expected key ${key} to be present.`,
+                        `Expected key '${key}' to be present.`,
                         value.region || new Region(0, 0, 0, 0)
                     )
                 );
-                if (process) {
-                    errors.process();
-                }
-                if (clear) {
-                    errors.errors = [];
-                }
-                return false;
+                continue;
             }
             if (!component.validate(value.get(key) as DocumentComponent)) {
                 errors.addError(
                     new LionError(
-                        `Expected key ${key} to satisfy constrains of type ${component.type}.`,
-                        value.region || new Region(0, 0, 0, 0)
+                        `Expected key '${key}' to satisfy the constrains of type '${component.type}'.`,
+                        value.get(key)?.region || new Region(0, 0, 0, 0)
                     )
                 );
-                if (process) {
-                    errors.process();
-                }
-                if (clear) {
-                    errors.errors = [];
-                }
-                return false;
             }
+        }
+
+        if (errors.errors.length > 0) {
+            return false;
         }
 
         errors.errors = [];
@@ -128,6 +126,25 @@ ${Array.from(this.components)
     }
 }
 
+/**
+ * The `TypeRegistry` class is a singleton that manages the registration and validation of types and schemas.
+ * It provides methods to register types and sub-schemas, retrieve types, and validate values against types.
+ *
+ * @remarks
+ * This class is designed to be used as a singleton, with the single instance accessible via `TypeRegistry.instance`.
+ *
+ * @example
+ * ```typescript
+ * // Register a type
+ * TypeRegistry.instance.registerType('MyType', myTypeCheckFunction);
+ *
+ * // Register a sub-schema
+ * TypeRegistry.instance.registerSubSchema('MySchema', mySchema);
+ *
+ * // Validate a value against a type
+ * const isValid = TypeRegistry.instance.validateType('MyType', myValue);
+ * ```
+ */
 export class TypeRegistry {
     public static instance = new TypeRegistry();
 
@@ -163,7 +180,7 @@ export class TypeRegistry {
         if (!this.hasType(typeName)) {
             errors.addError(
                 new LionError(
-                    `Type ${typeName} does not exist`,
+                    `Type '${typeName}' does not exist.`,
                     new Region(0, 0, 0, 0)
                 )
             );
@@ -179,7 +196,7 @@ export class TypeRegistry {
         if (!this.hasType(typeName)) {
             errors.addError(
                 new LionError(
-                    `Type ${typeName} does not exist`,
+                    `Type '${typeName}' does not exist.`,
                     value.region || new Region(0, 0, 0, 0)
                 )
             );
@@ -201,6 +218,13 @@ export class TypeRegistry {
     }
 }
 
+/**
+ * A type alias for a function that checks the type of a given value.
+ *
+ * @param value - The value to be checked, which is of type `DocumentComponent`.
+ * @param of - An optional parameter that is another `TypeCheck` function.
+ * @returns A boolean indicating whether the value passes the type check.
+ */
 export type TypeCheck = (value: DocumentComponent, of?: TypeCheck) => boolean;
 
 TypeRegistry.instance.registerType(

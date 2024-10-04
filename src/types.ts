@@ -1,8 +1,14 @@
 import { Region } from "./lexer";
 import { Schema } from "./schema";
 
+/**
+ * Represents a primitive value which can be a number, string, or boolean.
+ */
 export type ValuePrimitive = number | string | boolean;
 
+/**
+ * Represents a Lion document.
+ */
 export class LionDocument {
     public doc: DocumentComponent;
     public schema: Schema;
@@ -73,6 +79,13 @@ export class LionDocument {
     }
 }
 
+/**
+ * Represents a document component that can hold a primitive value or a collection of other document components.
+ * Extends the Map class to allow hierarchical structuring of document components.
+ *
+ * @class DocumentComponent
+ * @extends {Map<string, DocumentComponent>}
+ */
 export class DocumentComponent extends Map<string, DocumentComponent> {
     private value?: ValuePrimitive;
     public isArray = false;

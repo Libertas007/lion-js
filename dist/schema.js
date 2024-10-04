@@ -20,6 +20,7 @@ class Schema {
         this.components.set(name, component);
     }
     validate(value, process = false, clear = true) {
+        var _a, _b;
         if (value.isSingleValue()) {
             errors_1.errors.addError(new errors_1.LionError(`Expected object, got single value`, value.region || new lexer_1.Region(0, 0, 0, 0)));
             if (process) {
@@ -30,8 +31,21 @@ class Schema {
             }
             return false;
         }
-        if (value.size !== this.components.size) {
+        if (value.size < this.components.size) {
             errors_1.errors.addError(new errors_1.LionError(`Expected ${this.components.size} keys, got ${value.size}`, value.region || new lexer_1.Region(0, 0, 0, 0)));
+            if (process) {
+                errors_1.errors.process();
+            }
+            if (clear) {
+                errors_1.errors.errors = [];
+            }
+            return false;
+        }
+        if (value.size > this.components.size) {
+            let differentKeys = Array.from(value.keys()).filter((x) => !this.components.has(x));
+            for (const key of differentKeys) {
+                errors_1.errors.addError(new errors_1.LionError(`Unexpected key ${key}`, ((_a = value.get(key)) === null || _a === void 0 ? void 0 : _a.region) || new lexer_1.Region(0, 0, 0, 0)));
+            }
             if (process) {
                 errors_1.errors.process();
             }
@@ -52,7 +66,7 @@ class Schema {
                 return false;
             }
             if (!component.validate(value.get(key))) {
-                errors_1.errors.addError(new errors_1.LionError(`Expected key ${key} to satisfy constrains of type ${component.type}.`, value.region || new lexer_1.Region(0, 0, 0, 0)));
+                errors_1.errors.addError(new errors_1.LionError(`Expected key ${key} to satisfy constrains of type ${component.type}.`, ((_b = value.get(key)) === null || _b === void 0 ? void 0 : _b.region) || new lexer_1.Region(0, 0, 0, 0)));
                 if (process) {
                     errors_1.errors.process();
                 }
