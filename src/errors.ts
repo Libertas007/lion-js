@@ -60,4 +60,4 @@ class LionErrorList {
     }
 }
 
-export let errors = new LionErrorList();
+export let errors: LionErrorList = new LionErrorList();

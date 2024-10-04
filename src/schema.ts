@@ -146,7 +146,7 @@ ${Array.from(this.components)
  * ```
  */
 export class TypeRegistry {
-    public static instance = new TypeRegistry();
+    public static instance: TypeRegistry = new TypeRegistry();
 
     public types: Map<string, TypeCheck>;
     public subSchemas: Map<string, Schema>;
