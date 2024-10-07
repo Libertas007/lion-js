@@ -143,13 +143,13 @@ class Parser {
     expect(type, value) {
         var _a, _b, _c, _d;
         if (!this.currentToken) {
-            errors_1.errors.addError(new errors_1.LionError(`Expected token type to be ${type} (got EOF)`, new lexer_1.Region(0, 0, 0, 0)));
+            errors_1.errors.addError(new errors_1.LionError(`Expected the token type to be '${type}' (got EOF).`, new lexer_1.Region(0, 0, 0, 0)));
             this.finish = true;
             return "";
         }
         if (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) === type) {
             if (value && this.currentToken.value !== value) {
-                errors_1.errors.addError(new errors_1.LionError(`Expected value to be ${value} (got ${this.currentToken.value})`, this.currentToken.region));
+                errors_1.errors.addError(new errors_1.LionError(`Expected the value to be '${value}' (got ${this.currentToken.value}).`, this.currentToken.region));
                 this.advance();
                 return "";
             }
@@ -158,7 +158,7 @@ class Parser {
             return val;
         }
         else {
-            errors_1.errors.addError(new errors_1.LionError(`Expected token type to be ${type} (got ${(_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type})`, (_d = (_c = this.currentToken) === null || _c === void 0 ? void 0 : _c.region) !== null && _d !== void 0 ? _d : new lexer_1.Region(0, 0, 0, 0)));
+            errors_1.errors.addError(new errors_1.LionError(`Expected the token type to be '${type}' (got ${(_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type}).`, (_d = (_c = this.currentToken) === null || _c === void 0 ? void 0 : _c.region) !== null && _d !== void 0 ? _d : new lexer_1.Region(0, 0, 0, 0)));
             this.advance();
             return "";
         }
@@ -233,13 +233,13 @@ class SchemaParser {
     expect(type, value) {
         var _a, _b, _c, _d;
         if (!this.currentToken) {
-            errors_1.errors.addError(new errors_1.LionError(`Expected token type to be ${type} (got EOF)`, new lexer_1.Region(0, 0, 0, 0)));
+            errors_1.errors.addError(new errors_1.LionError(`Expected the token type to be '${type}' (got EOF).`, new lexer_1.Region(0, 0, 0, 0)));
             this.finish = true;
             return "";
         }
         if (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) === type) {
             if (value && this.currentToken.value !== value) {
-                errors_1.errors.addError(new errors_1.LionError(`Expected value to be ${value} (got ${this.currentToken.value})`, this.currentToken.region));
+                errors_1.errors.addError(new errors_1.LionError(`Expected the value to be '${value}' (got ${this.currentToken.value}).`, this.currentToken.region));
                 this.advance();
                 return "";
             }
@@ -248,7 +248,7 @@ class SchemaParser {
             return val;
         }
         else {
-            errors_1.errors.addError(new errors_1.LionError(`Expected token type to be ${type} (got ${(_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type})`, (_d = (_c = this.currentToken) === null || _c === void 0 ? void 0 : _c.region) !== null && _d !== void 0 ? _d : new lexer_1.Region(0, 0, 0, 0)));
+            errors_1.errors.addError(new errors_1.LionError(`Expected the token type to be '${type}' (got ${(_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type}).`, (_d = (_c = this.currentToken) === null || _c === void 0 ? void 0 : _c.region) !== null && _d !== void 0 ? _d : new lexer_1.Region(0, 0, 0, 0)));
             this.advance();
             return "";
         }

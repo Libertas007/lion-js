@@ -3,6 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TypeRegistry = exports.Schema = exports.SchemaComponent = void 0;
 const errors_1 = require("./errors");
 const lexer_1 = require("./lexer");
+/**
+ * Represents a schema component that can validate a document component against a specified type.
+ */
 class SchemaComponent {
     constructor(type) {
         this.type = type;
@@ -12,6 +15,9 @@ class SchemaComponent {
     }
 }
 exports.SchemaComponent = SchemaComponent;
+/**
+ * Represents a schema.
+ */
 class Schema {
     constructor() {
         this.components = new Map();
@@ -22,59 +28,28 @@ class Schema {
     validate(value, process = false, clear = true) {
         var _a, _b;
         if (value.isSingleValue()) {
-            errors_1.errors.addError(new errors_1.LionError(`Expected object, got single value`, value.region || new lexer_1.Region(0, 0, 0, 0)));
-            if (process) {
-                errors_1.errors.process();
-            }
-            if (clear) {
-                errors_1.errors.errors = [];
-            }
-            return false;
+            errors_1.errors.addError(new errors_1.LionError(`Expected an object, got a single value.`, value.region || new lexer_1.Region(0, 0, 0, 0)));
         }
         if (value.size < this.components.size) {
-            errors_1.errors.addError(new errors_1.LionError(`Expected ${this.components.size} keys, got ${value.size}`, value.region || new lexer_1.Region(0, 0, 0, 0)));
-            if (process) {
-                errors_1.errors.process();
-            }
-            if (clear) {
-                errors_1.errors.errors = [];
-            }
-            return false;
+            errors_1.errors.addError(new errors_1.LionError(`Expected ${this.components.size} keys, got ${value.size}.`, value.region || new lexer_1.Region(0, 0, 0, 0)));
         }
         if (value.size > this.components.size) {
             let differentKeys = Array.from(value.keys()).filter((x) => !this.components.has(x));
             for (const key of differentKeys) {
-                errors_1.errors.addError(new errors_1.LionError(`Unexpected key ${key}`, ((_a = value.get(key)) === null || _a === void 0 ? void 0 : _a.region) || new lexer_1.Region(0, 0, 0, 0)));
+                errors_1.errors.addError(new errors_1.LionError(`Unexpected key '${key}'.`, ((_a = value.get(key)) === null || _a === void 0 ? void 0 : _a.region) || new lexer_1.Region(0, 0, 0, 0)));
             }
-            if (process) {
-                errors_1.errors.process();
-            }
-            if (clear) {
-                errors_1.errors.errors = [];
-            }
-            return false;
         }
         for (const [key, component] of this.components) {
             if (!value.has(key)) {
-                errors_1.errors.addError(new errors_1.LionError(`Expected key ${key} to be present.`, value.region || new lexer_1.Region(0, 0, 0, 0)));
-                if (process) {
-                    errors_1.errors.process();
-                }
-                if (clear) {
-                    errors_1.errors.errors = [];
-                }
-                return false;
+                errors_1.errors.addError(new errors_1.LionError(`Expected key '${key}' to be present.`, value.region || new lexer_1.Region(0, 0, 0, 0)));
+                continue;
             }
             if (!component.validate(value.get(key))) {
-                errors_1.errors.addError(new errors_1.LionError(`Expected key ${key} to satisfy constrains of type ${component.type}.`, ((_b = value.get(key)) === null || _b === void 0 ? void 0 : _b.region) || new lexer_1.Region(0, 0, 0, 0)));
-                if (process) {
-                    errors_1.errors.process();
-                }
-                if (clear) {
-                    errors_1.errors.errors = [];
-                }
-                return false;
+                errors_1.errors.addError(new errors_1.LionError(`Expected key '${key}' to satisfy the constrains of type '${component.type}'.`, ((_b = value.get(key)) === null || _b === void 0 ? void 0 : _b.region) || new lexer_1.Region(0, 0, 0, 0)));
             }
+        }
+        if (errors_1.errors.errors.length > 0) {
+            return false;
         }
         errors_1.errors.errors = [];
         return true;
@@ -108,6 +83,25 @@ ${Array.from(this.components)
     }
 }
 exports.Schema = Schema;
+/**
+ * The `TypeRegistry` class is a singleton that manages the registration and validation of types and schemas.
+ * It provides methods to register types and sub-schemas, retrieve types, and validate values against types.
+ *
+ * @remarks
+ * This class is designed to be used as a singleton, with the single instance accessible via `TypeRegistry.instance`.
+ *
+ * @example
+ * ```typescript
+ * // Register a type
+ * TypeRegistry.instance.registerType('MyType', myTypeCheckFunction);
+ *
+ * // Register a sub-schema
+ * TypeRegistry.instance.registerSubSchema('MySchema', mySchema);
+ *
+ * // Validate a value against a type
+ * const isValid = TypeRegistry.instance.validateType('MyType', myValue);
+ * ```
+ */
 class TypeRegistry {
     constructor() {
         this.types = new Map();
@@ -129,7 +123,7 @@ class TypeRegistry {
     getType(type) {
         const [typeName, of] = this.extractType(type);
         if (!this.hasType(typeName)) {
-            errors_1.errors.addError(new errors_1.LionError(`Type ${typeName} does not exist`, new lexer_1.Region(0, 0, 0, 0)));
+            errors_1.errors.addError(new errors_1.LionError(`Type '${typeName}' does not exist.`, new lexer_1.Region(0, 0, 0, 0)));
         }
         return this.types.get(typeName);
     }
@@ -138,7 +132,7 @@ class TypeRegistry {
         // console.log({ type, value });
         const [typeName, of] = this.extractType(type);
         if (!this.hasType(typeName)) {
-            errors_1.errors.addError(new errors_1.LionError(`Type ${typeName} does not exist`, value.region || new lexer_1.Region(0, 0, 0, 0)));
+            errors_1.errors.addError(new errors_1.LionError(`Type '${typeName}' does not exist.`, value.region || new lexer_1.Region(0, 0, 0, 0)));
             return false;
         }
         const check = this.getType(typeName);

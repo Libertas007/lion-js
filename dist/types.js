@@ -2,6 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DocumentComponent = exports.LionDocument = void 0;
 const schema_1 = require("./schema");
+/**
+ * Represents a Lion document.
+ */
 class LionDocument {
     constructor(document, schema) {
         this.hasSchema = false;
@@ -56,6 +59,13 @@ class LionDocument {
     }
 }
 exports.LionDocument = LionDocument;
+/**
+ * Represents a document component that can hold a primitive value or a collection of other document components.
+ * Extends the Map class to allow hierarchical structuring of document components.
+ *
+ * @class DocumentComponent
+ * @extends {Map<string, DocumentComponent>}
+ */
 class DocumentComponent extends Map {
     constructor(value, region) {
         super();

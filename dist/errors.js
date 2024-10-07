@@ -1,6 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.errors = exports.LionError = void 0;
+/**
+ * Represents an error specific to the Lion format.
+ *
+ * @remarks
+ * This class is used to encapsulate error details including a message,
+ * the region where the error occurred, and an optional description.
+ *
+ *
+ * @public
+ */
 class LionError {
     constructor(message, region, description) {
         this.description = "";
