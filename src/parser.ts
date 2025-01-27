@@ -256,10 +256,15 @@ export class SchemaParser {
     private parsePair(): [string, SchemaComponent] {
         const key = this.currentToken?.value;
         this.expect(TokenType.IDENTIFIER);
+        let isOptional = false;
+        if (this.currentToken?.type === TokenType.OPTIONAL_PROPERTY) {
+            this.advance();
+            isOptional = true;
+        }
         this.expect(TokenType.COLON);
         const value = this.parseType();
         this.advance();
-        return [key?.toString() || "", new SchemaComponent(value)];
+        return [key?.toString() || "", new SchemaComponent(value, isOptional)];
     }
 
     private parseType(): string {

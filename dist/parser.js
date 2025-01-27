@@ -198,13 +198,18 @@ class SchemaParser {
         return schema;
     }
     parsePair() {
-        var _a;
+        var _a, _b;
         const key = (_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.value;
         this.expect(lexer_1.TokenType.IDENTIFIER);
+        let isOptional = false;
+        if (((_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type) === lexer_1.TokenType.OPTIONAL_PROPERTY) {
+            this.advance();
+            isOptional = true;
+        }
         this.expect(lexer_1.TokenType.COLON);
         const value = this.parseType();
         this.advance();
-        return [(key === null || key === void 0 ? void 0 : key.toString()) || "", new schema_1.SchemaComponent(value)];
+        return [(key === null || key === void 0 ? void 0 : key.toString()) || "", new schema_1.SchemaComponent(value, isOptional)];
     }
     parseType() {
         var _a;

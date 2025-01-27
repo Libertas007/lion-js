@@ -32,6 +32,17 @@ export class Lexer {
             if (this.currentChar === "\t") {
                 this.col += 4;
             }
+            if (this.currentChar === "?") {
+                this.tokens.push(
+                    new Token(
+                        TokenType.OPTIONAL_PROPERTY,
+                        "{",
+                        new Region(this.line, this.line, this.col, this.col)
+                    )
+                );
+                this.advance();
+                continue;
+            }
             if (this.currentChar === "{") {
                 this.tokens.push(
                     new Token(
@@ -421,4 +432,5 @@ export enum TokenType {
     OF_TYPE_START = "OF_TYPE_START",
     OF_TYPE_END = "OF_TYPE_END",
     EOF = "EOF",
+    OPTIONAL_PROPERTY = "OPTIONAL_PROPERTY",
 }

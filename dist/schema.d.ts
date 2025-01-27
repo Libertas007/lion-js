@@ -4,7 +4,8 @@ import { DocumentComponent } from "./types";
  */
 export declare class SchemaComponent {
     type: string;
-    constructor(type: string);
+    isOptional: boolean;
+    constructor(type: string, isOptional?: boolean);
     validate(value: DocumentComponent): boolean;
 }
 /**

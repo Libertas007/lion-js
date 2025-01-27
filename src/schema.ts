@@ -7,9 +7,11 @@ import { DocumentComponent } from "./types";
  */
 export class SchemaComponent {
     public type: string;
+    public isOptional: boolean;
 
-    constructor(type: string) {
+    constructor(type: string, isOptional: boolean = false) {
         this.type = type;
+        this.isOptional = isOptional;
     }
 
     public validate(value: DocumentComponent): boolean {
@@ -44,32 +46,42 @@ export class Schema {
                 )
             );
         }
-        if (value.size < this.components.size) {
+        if (
+            value.size <
+                Array.from(this.components.values()).filter(
+                    (x) => !x.isOptional
+                ).length ||
+            value.size > this.components.size
+        ) {
+            const nonOptional = Array.from(this.components.values()).filter(
+                (x) => !x.isOptional
+            ).length;
+
             errors.addError(
                 new LionError(
-                    `Expected ${this.components.size} keys, got ${value.size}.`,
+                    nonOptional !== this.components.size
+                        ? `Expected ${nonOptional}-${this.components.size} keys, got ${value.size}.`
+                        : `Expected ${this.components.size} keys, got ${value.size}.`,
                     value.region || new Region(0, 0, 0, 0)
                 )
             );
         }
 
-        if (value.size > this.components.size) {
-            let differentKeys = Array.from(value.keys()).filter(
-                (x) => !this.components.has(x)
-            );
+        let differentKeys = Array.from(value.keys()).filter(
+            (x) => !this.components.has(x)
+        );
 
-            for (const key of differentKeys) {
-                errors.addError(
-                    new LionError(
-                        `Unexpected key '${key}'.`,
-                        value.get(key)?.region || new Region(0, 0, 0, 0)
-                    )
-                );
-            }
+        for (const key of differentKeys) {
+            errors.addError(
+                new LionError(
+                    `Unexpected key '${key}'.`,
+                    value.get(key)?.region || new Region(0, 0, 0, 0)
+                )
+            );
         }
 
         for (const [key, component] of this.components) {
-            if (!value.has(key)) {
+            if (!value.has(key) && !component.isOptional) {
                 errors.addError(
                     new LionError(
                         `Expected key '${key}' to be present.`,
@@ -78,7 +90,11 @@ export class Schema {
                 );
                 continue;
             }
-            if (!component.validate(value.get(key) as DocumentComponent)) {
+
+            if (
+                value.has(key) &&
+                !component.validate(value.get(key) as DocumentComponent)
+            ) {
                 errors.addError(
                     new LionError(
                         `Expected key '${key}' to satisfy the constrains of type '${component.type}'.`,
@@ -267,3 +283,5 @@ TypeRegistry.instance.registerType(
         value.isArray &&
         (of ? Array.from(value.values()).every((v) => of(v)) : true)
 );
+
+TypeRegistry.instance.registerType("Any", (value: DocumentComponent) => true);

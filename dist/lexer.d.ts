@@ -41,5 +41,6 @@ export declare enum TokenType {
     MODIFIER = "MODIFIER",
     OF_TYPE_START = "OF_TYPE_START",
     OF_TYPE_END = "OF_TYPE_END",
-    EOF = "EOF"
+    EOF = "EOF",
+    OPTIONAL_PROPERTY = "OPTIONAL_PROPERTY"
 }
