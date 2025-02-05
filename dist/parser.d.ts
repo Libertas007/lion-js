@@ -1,12 +1,14 @@
+import { ParsingContext } from "./context";
 import { Token, TokenType } from "./lexer";
 import { Schema } from "./schema";
 import { LionDocument, ValuePrimitive } from "./types";
 export declare class Parser {
     tokens: Token[];
+    context: ParsingContext;
     protected pos: number;
     protected currentToken: Token | null;
     protected finish: boolean;
-    constructor(tokens: Token[]);
+    constructor(tokens: Token[], context: ParsingContext);
     parse(): LionDocument;
     private parseSchema;
     private parseDoc;
@@ -19,10 +21,11 @@ export declare class Parser {
 }
 export declare class SchemaParser {
     tokens: Token[];
+    context: ParsingContext;
     protected pos: number;
     protected currentToken: Token;
     protected finish: boolean;
-    constructor(tokens: Token[]);
+    constructor(tokens: Token[], context: ParsingContext);
     parse(): Schema;
     private parseSchema;
     private parsePair;

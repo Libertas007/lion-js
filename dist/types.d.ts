@@ -1,3 +1,4 @@
+import { ParsingContext } from "./context";
 import { Region } from "./lexer";
 import { Schema } from "./schema";
 /**
@@ -11,7 +12,8 @@ export declare class LionDocument {
     doc: DocumentComponent;
     schema: Schema;
     hasSchema: boolean;
-    constructor(document: DocumentComponent, schema?: Schema);
+    context: ParsingContext;
+    constructor(context: ParsingContext, document: DocumentComponent, schema?: Schema);
     get(key: string): DocumentComponent | ValuePrimitive | undefined;
     set(key: string, value: ValuePrimitive): void;
     validate(silent?: boolean): boolean;

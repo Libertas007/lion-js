@@ -15,11 +15,11 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.stringifySchema = exports.analyzeSchema = exports.parseSchemaOrNull = exports.parseSchema = exports.parseTextOrNull = exports.analyzeText = exports.stringifyDocument = exports.parseText = void 0;
-const errors_1 = require("./errors");
+const context_1 = require("./context");
 const lexer_1 = require("./lexer");
 const parser_1 = require("./parser");
 __exportStar(require("./types"), exports);
-__exportStar(require("./errors"), exports);
+__exportStar(require("./context"), exports);
 __exportStar(require("./schema"), exports);
 /**
  * Parses the given text and returns a LionDocument.
@@ -30,14 +30,14 @@ __exportStar(require("./schema"), exports);
  * @throws Will throw an error if the document schema validation fails.
  */
 function parseText(text) {
-    const lexer = new lexer_1.Lexer(text);
-    const parser = new parser_1.Parser(lexer.process());
+    const context = new context_1.ParsingContext();
+    const lexer = new lexer_1.Lexer(text, context);
+    const parser = new parser_1.Parser(lexer.process(), context);
     const doc = parser.parse();
     if (doc.hasSchema) {
         doc.schema.validate(doc.doc, true, true);
     }
-    errors_1.errors.process();
-    errors_1.errors.errors = [];
+    context.errors.process();
     return doc;
 }
 exports.parseText = parseText;
@@ -58,15 +58,14 @@ exports.stringifyDocument = stringifyDocument;
  * @returns An array of LionError objects containing the analysis results.
  */
 function analyzeText(text) {
-    const lexer = new lexer_1.Lexer(text);
-    const parser = new parser_1.Parser(lexer.process());
+    const context = new context_1.ParsingContext();
+    const lexer = new lexer_1.Lexer(text, context);
+    const parser = new parser_1.Parser(lexer.process(), context);
     const doc = parser.parse();
     if (doc.hasSchema) {
         doc.schema.validate(doc.doc, false, false);
     }
-    const final = errors_1.errors.errors;
-    errors_1.errors.errors = [];
-    return final;
+    return context.errors.errors;
 }
 exports.analyzeText = analyzeText;
 /**
@@ -91,11 +90,11 @@ exports.parseTextOrNull = parseTextOrNull;
  * @returns The parsed Schema object.
  */
 function parseSchema(text) {
-    const lexer = new lexer_1.Lexer(text);
-    const parser = new parser_1.SchemaParser(lexer.process());
+    const context = new context_1.ParsingContext();
+    const lexer = new lexer_1.Lexer(text, context);
+    const parser = new parser_1.SchemaParser(lexer.process(), context);
     const schema = parser.parse();
-    errors_1.errors.process();
-    errors_1.errors.errors = [];
+    context.errors.process();
     return schema;
 }
 exports.parseSchema = parseSchema;
@@ -125,12 +124,11 @@ exports.parseSchemaOrNull = parseSchemaOrNull;
  * @returns An array of LionError objects representing the errors found during schema analysis.
  */
 function analyzeSchema(text) {
-    const lexer = new lexer_1.Lexer(text);
-    const parser = new parser_1.SchemaParser(lexer.process());
+    const context = new context_1.ParsingContext();
+    const lexer = new lexer_1.Lexer(text, context);
+    const parser = new parser_1.SchemaParser(lexer.process(), context);
     parser.parse();
-    const final = errors_1.errors.errors;
-    errors_1.errors.errors = [];
-    return final;
+    return context.errors.errors;
 }
 exports.analyzeSchema = analyzeSchema;
 /**

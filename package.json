@@ -1,22 +1,25 @@
 {
-    "name": "lion-parser",
-    "version": "1.1.4",
-    "description": "Libertas Object Notation parser",
-    "main": "./dist/main.js",
-    "types": "./dist/main.d.ts",
-    "files": [
-        "./dist"
-    ],
-    "author": "Libertas",
-    "license": "MIT",
-    "scripts": {
-        "build": "tsc"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/Libertas007/lion-js"
-    },
-    "devDependencies": {
-        "typescript": "^5.4.5"
-    }
+  "name": "lion-parser",
+  "version": "1.1.4",
+  "description": "Libertas Object Notation parser",
+  "main": "./dist/main.js",
+  "types": "./dist/main.d.ts",
+  "files": [
+    "./dist"
+  ],
+  "author": "Libertas",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Libertas007/lion-js"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@types/node": "^22.13.1"
+  }
 }

@@ -1,20 +1,21 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SchemaParser = exports.Parser = void 0;
-const errors_1 = require("./errors");
+const context_1 = require("./context");
 const lexer_1 = require("./lexer");
 const schema_1 = require("./schema");
 const types_1 = require("./types");
 class Parser {
-    constructor(tokens) {
+    constructor(tokens, context) {
         this.finish = false;
         this.tokens = tokens;
+        this.context = context;
         this.pos = 0;
         this.currentToken = this.tokens[this.pos];
     }
     parse() {
         var _a, _b;
-        let schema = new schema_1.Schema();
+        let schema = new schema_1.Schema(this.context);
         let hasSchema = false;
         if (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) === lexer_1.TokenType.MODIFIER &&
             this.currentToken.value === "@schema") {
@@ -26,16 +27,16 @@ class Parser {
             this.expect(lexer_1.TokenType.MODIFIER, "@doc");
             const doc = this.parseDoc();
             if (hasSchema) {
-                return new types_1.LionDocument(doc, schema);
+                return new types_1.LionDocument(this.context, doc, schema);
             }
-            return new types_1.LionDocument(doc);
+            return new types_1.LionDocument(this.context, doc);
         }
         else {
             const doc = this.parseDoc();
             if (hasSchema) {
-                return new types_1.LionDocument(doc, schema);
+                return new types_1.LionDocument(this.context, doc, schema);
             }
-            return new types_1.LionDocument(doc);
+            return new types_1.LionDocument(this.context, doc);
         }
     }
     parseSchema() {
@@ -43,14 +44,14 @@ class Parser {
         this.expect(lexer_1.TokenType.MODIFIER, "@schema");
         if (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) === lexer_1.TokenType.STRING) {
             console.warn("Schema by name is not supported yet");
-            return new schema_1.Schema();
+            return new schema_1.Schema(this.context);
         }
         this.expect(lexer_1.TokenType.LBRACE);
         const schemaEnd = this.tokens.findIndex((token) => token.type === lexer_1.TokenType.MODIFIER && token.value === "@doc");
         const parser = new SchemaParser([
             ...this.tokens.slice(this.pos, schemaEnd - 1),
             new lexer_1.Token(lexer_1.TokenType.EOF, "", new lexer_1.Region(0, 0, 0, 0)),
-        ]);
+        ], this.context);
         const schema = parser.parse();
         this.pos = schemaEnd - 1;
         this.advance();
@@ -143,13 +144,13 @@ class Parser {
     expect(type, value) {
         var _a, _b, _c, _d;
         if (!this.currentToken) {
-            errors_1.errors.addError(new errors_1.LionError(`Expected the token type to be '${type}' (got EOF).`, new lexer_1.Region(0, 0, 0, 0)));
+            this.context.errors.addError(new context_1.LionError(`Expected the token type to be '${type}' (got EOF).`, new lexer_1.Region(0, 0, 0, 0)));
             this.finish = true;
             return "";
         }
         if (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) === type) {
             if (value && this.currentToken.value !== value) {
-                errors_1.errors.addError(new errors_1.LionError(`Expected the value to be '${value}' (got ${this.currentToken.value}).`, this.currentToken.region));
+                this.context.errors.addError(new context_1.LionError(`Expected the value to be '${value}' (got ${this.currentToken.value}).`, this.currentToken.region));
                 this.advance();
                 return "";
             }
@@ -158,7 +159,7 @@ class Parser {
             return val;
         }
         else {
-            errors_1.errors.addError(new errors_1.LionError(`Expected the token type to be '${type}' (got ${(_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type}).`, (_d = (_c = this.currentToken) === null || _c === void 0 ? void 0 : _c.region) !== null && _d !== void 0 ? _d : new lexer_1.Region(0, 0, 0, 0)));
+            this.context.errors.addError(new context_1.LionError(`Expected the token type to be '${type}' (got ${(_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type}).`, (_d = (_c = this.currentToken) === null || _c === void 0 ? void 0 : _c.region) !== null && _d !== void 0 ? _d : new lexer_1.Region(0, 0, 0, 0)));
             this.advance();
             return "";
         }
@@ -166,9 +167,10 @@ class Parser {
 }
 exports.Parser = Parser;
 class SchemaParser {
-    constructor(tokens) {
+    constructor(tokens, context) {
         this.finish = false;
         this.tokens = tokens;
+        this.context = context;
         this.pos = 0;
         this.currentToken = this.tokens[this.pos];
     }
@@ -180,15 +182,15 @@ class SchemaParser {
             this.expect(lexer_1.TokenType.MODIFIER, "@subschema");
             const name = this.expect(lexer_1.TokenType.IDENTIFIER);
             const subSchema = this.parseSchema();
-            schema_1.TypeRegistry.instance.registerType(name, subSchema.toTypeCheck());
-            schema_1.TypeRegistry.instance.registerSubSchema(name, subSchema);
+            this.context.typeRegistry.registerType(name, subSchema.toTypeCheck());
+            this.context.typeRegistry.registerSubSchema(name, subSchema);
         }
         return schema;
     }
     parseSchema() {
         var _a, _b;
         this.expect(lexer_1.TokenType.LBRACE);
-        const schema = new schema_1.Schema();
+        const schema = new schema_1.Schema(this.context);
         while (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) !== lexer_1.TokenType.RBRACE &&
             ((_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type) !== lexer_1.TokenType.EOF) {
             const [key, value] = this.parsePair();
@@ -209,7 +211,10 @@ class SchemaParser {
         this.expect(lexer_1.TokenType.COLON);
         const value = this.parseType();
         this.advance();
-        return [(key === null || key === void 0 ? void 0 : key.toString()) || "", new schema_1.SchemaComponent(value, isOptional)];
+        return [
+            (key === null || key === void 0 ? void 0 : key.toString()) || "",
+            new schema_1.SchemaComponent(value, isOptional, this.context),
+        ];
     }
     parseType() {
         var _a;
@@ -238,13 +243,13 @@ class SchemaParser {
     expect(type, value) {
         var _a, _b, _c, _d;
         if (!this.currentToken) {
-            errors_1.errors.addError(new errors_1.LionError(`Expected the token type to be '${type}' (got EOF).`, new lexer_1.Region(0, 0, 0, 0)));
+            this.context.errors.addError(new context_1.LionError(`Expected the token type to be '${type}' (got EOF).`, new lexer_1.Region(0, 0, 0, 0)));
             this.finish = true;
             return "";
         }
         if (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) === type) {
             if (value && this.currentToken.value !== value) {
-                errors_1.errors.addError(new errors_1.LionError(`Expected the value to be '${value}' (got ${this.currentToken.value}).`, this.currentToken.region));
+                this.context.errors.addError(new context_1.LionError(`Expected the value to be '${value}' (got ${this.currentToken.value}).`, this.currentToken.region));
                 this.advance();
                 return "";
             }
@@ -253,7 +258,7 @@ class SchemaParser {
             return val;
         }
         else {
-            errors_1.errors.addError(new errors_1.LionError(`Expected the token type to be '${type}' (got ${(_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type}).`, (_d = (_c = this.currentToken) === null || _c === void 0 ? void 0 : _c.region) !== null && _d !== void 0 ? _d : new lexer_1.Region(0, 0, 0, 0)));
+            this.context.errors.addError(new context_1.LionError(`Expected the token type to be '${type}' (got ${(_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type}).`, (_d = (_c = this.currentToken) === null || _c === void 0 ? void 0 : _c.region) !== null && _d !== void 0 ? _d : new lexer_1.Region(0, 0, 0, 0)));
             this.advance();
             return "";
         }

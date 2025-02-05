@@ -6,10 +6,11 @@ const schema_1 = require("./schema");
  * Represents a Lion document.
  */
 class LionDocument {
-    constructor(document, schema) {
+    constructor(context, document, schema) {
         this.hasSchema = false;
+        this.context = context;
         this.doc = document;
-        this.schema = schema || new schema_1.Schema();
+        this.schema = schema || new schema_1.Schema(this.context);
         this.hasSchema = schema !== undefined;
     }
     get(key) {
@@ -87,7 +88,10 @@ class DocumentComponent extends Map {
     }
     get(key) {
         if (key === undefined) {
-            return this.value;
+            return this.value || this;
+        }
+        if (this.isArray) {
+            return this.toArray();
         }
         return super.get(key);
     }

@@ -1,23 +1,26 @@
-import { LionError, errors } from "./errors";
+import { LionError, ParsingContext } from "./context";
 import { Region, Token, TokenType } from "./lexer";
 import { Schema, SchemaComponent, TypeRegistry } from "./schema";
 import { DocumentComponent, LionDocument, ValuePrimitive } from "./types";
 
 export class Parser {
     public tokens: Token[];
+    public context: ParsingContext;
+
     protected pos: number;
     protected currentToken: Token | null;
 
     protected finish: boolean = false;
 
-    constructor(tokens: Token[]) {
+    constructor(tokens: Token[], context: ParsingContext) {
         this.tokens = tokens;
+        this.context = context;
         this.pos = 0;
         this.currentToken = this.tokens[this.pos];
     }
 
     public parse(): LionDocument {
-        let schema = new Schema();
+        let schema = new Schema(this.context);
         let hasSchema = false;
         if (
             this.currentToken?.type === TokenType.MODIFIER &&
@@ -34,15 +37,15 @@ export class Parser {
             this.expect(TokenType.MODIFIER, "@doc");
             const doc = this.parseDoc();
             if (hasSchema) {
-                return new LionDocument(doc, schema);
+                return new LionDocument(this.context, doc, schema);
             }
-            return new LionDocument(doc);
+            return new LionDocument(this.context, doc);
         } else {
             const doc = this.parseDoc();
             if (hasSchema) {
-                return new LionDocument(doc, schema);
+                return new LionDocument(this.context, doc, schema);
             }
-            return new LionDocument(doc);
+            return new LionDocument(this.context, doc);
         }
     }
 
@@ -50,7 +53,7 @@ export class Parser {
         this.expect(TokenType.MODIFIER, "@schema");
         if (this.currentToken?.type === TokenType.STRING) {
             console.warn("Schema by name is not supported yet");
-            return new Schema();
+            return new Schema(this.context);
         }
 
         this.expect(TokenType.LBRACE);
@@ -60,10 +63,13 @@ export class Parser {
                 token.type === TokenType.MODIFIER && token.value === "@doc"
         );
 
-        const parser = new SchemaParser([
-            ...this.tokens.slice(this.pos, schemaEnd - 1),
-            new Token(TokenType.EOF, "", new Region(0, 0, 0, 0)),
-        ]);
+        const parser = new SchemaParser(
+            [
+                ...this.tokens.slice(this.pos, schemaEnd - 1),
+                new Token(TokenType.EOF, "", new Region(0, 0, 0, 0)),
+            ],
+            this.context
+        );
         const schema = parser.parse();
 
         this.pos = schemaEnd - 1;
@@ -173,7 +179,7 @@ export class Parser {
 
     protected expect(type: TokenType, value?: ValuePrimitive): ValuePrimitive {
         if (!this.currentToken) {
-            errors.addError(
+            this.context.errors.addError(
                 new LionError(
                     `Expected the token type to be '${type}' (got EOF).`,
                     new Region(0, 0, 0, 0)
@@ -185,7 +191,7 @@ export class Parser {
 
         if (this.currentToken?.type === type) {
             if (value && this.currentToken.value !== value) {
-                errors.addError(
+                this.context.errors.addError(
                     new LionError(
                         `Expected the value to be '${value}' (got ${this.currentToken.value}).`,
                         this.currentToken.region
@@ -199,7 +205,7 @@ export class Parser {
 
             return val;
         } else {
-            errors.addError(
+            this.context.errors.addError(
                 new LionError(
                     `Expected the token type to be '${type}' (got ${this.currentToken?.type}).`,
                     this.currentToken?.region ?? new Region(0, 0, 0, 0)
@@ -213,13 +219,15 @@ export class Parser {
 
 export class SchemaParser {
     public tokens: Token[];
+    public context: ParsingContext;
     protected pos: number;
     protected currentToken: Token;
 
     protected finish: boolean = false;
 
-    constructor(tokens: Token[]) {
+    constructor(tokens: Token[], context: ParsingContext) {
         this.tokens = tokens;
+        this.context = context;
         this.pos = 0;
         this.currentToken = this.tokens[this.pos];
     }
@@ -233,15 +241,18 @@ export class SchemaParser {
             const name = this.expect(TokenType.IDENTIFIER) as string;
             const subSchema = this.parseSchema();
 
-            TypeRegistry.instance.registerType(name, subSchema.toTypeCheck());
-            TypeRegistry.instance.registerSubSchema(name, subSchema);
+            this.context.typeRegistry.registerType(
+                name,
+                subSchema.toTypeCheck()
+            );
+            this.context.typeRegistry.registerSubSchema(name, subSchema);
         }
         return schema;
     }
 
     private parseSchema(): Schema {
         this.expect(TokenType.LBRACE);
-        const schema = new Schema();
+        const schema = new Schema(this.context);
         while (
             this.currentToken?.type !== TokenType.RBRACE &&
             this.currentToken?.type !== TokenType.EOF
@@ -264,7 +275,10 @@ export class SchemaParser {
         this.expect(TokenType.COLON);
         const value = this.parseType();
         this.advance();
-        return [key?.toString() || "", new SchemaComponent(value, isOptional)];
+        return [
+            key?.toString() || "",
+            new SchemaComponent(value, isOptional, this.context),
+        ];
     }
 
     private parseType(): string {
@@ -299,7 +313,7 @@ export class SchemaParser {
 
     protected expect(type: TokenType, value?: ValuePrimitive): ValuePrimitive {
         if (!this.currentToken) {
-            errors.addError(
+            this.context.errors.addError(
                 new LionError(
                     `Expected the token type to be '${type}' (got EOF).`,
                     new Region(0, 0, 0, 0)
@@ -311,7 +325,7 @@ export class SchemaParser {
 
         if (this.currentToken?.type === type) {
             if (value && this.currentToken.value !== value) {
-                errors.addError(
+                this.context.errors.addError(
                     new LionError(
                         `Expected the value to be '${value}' (got ${this.currentToken.value}).`,
                         this.currentToken.region
@@ -325,7 +339,7 @@ export class SchemaParser {
 
             return val;
         } else {
-            errors.addError(
+            this.context.errors.addError(
                 new LionError(
                     `Expected the token type to be '${type}' (got ${this.currentToken?.type}).`,
                     this.currentToken?.region ?? new Region(0, 0, 0, 0)

@@ -1,5 +1,7 @@
-import { Region } from "./lexer";
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ParsingContext = exports.LionErrorList = exports.LionError = void 0;
+const schema_1 = require("./schema");
 /**
  * Represents an error specific to the Lion format.
  *
@@ -10,54 +12,50 @@ import { Region } from "./lexer";
  *
  * @public
  */
-export class LionError {
-    public message: string;
-    public region: Region;
-    public description: string = "";
-
-    constructor(message: string, region: Region, description?: string) {
+class LionError {
+    constructor(message, region, description) {
+        this.description = "";
         this.message = message;
         this.region = region;
         this.description = description || "";
     }
-
-    public toString(): string {
+    toString() {
         if (this.description) {
             return `${this.message} at ${this.region.startLine}:${this.region.startCol}\n${this.description}`;
         }
         return `${this.message} at ${this.region.startLine}:${this.region.startCol}`;
     }
-
-    public process() {
+    process() {
         throw new Error(this.toString());
     }
 }
-
+exports.LionError = LionError;
 class LionErrorList {
-    public errors: LionError[];
-    public processWhenAdded: boolean = false;
-
-    constructor(errors?: LionError[], processWhenAdded?: boolean) {
+    constructor(errors, processWhenAdded) {
+        this.processWhenAdded = false;
         this.errors = errors || [];
         this.processWhenAdded = processWhenAdded || false;
     }
-
-    public addError(error: LionError) {
+    addError(error) {
         this.errors.push(error);
         if (this.processWhenAdded) {
             this.process();
         }
     }
-
-    public toString(): string {
+    toString() {
         return this.errors.map((error) => error.toString()).join("\n");
     }
-
-    public process() {
+    process() {
         if (this.errors.length > 0) {
             throw new Error(this.toString());
         }
     }
 }
-
-export let errors: LionErrorList = new LionErrorList();
+exports.LionErrorList = LionErrorList;
+class ParsingContext {
+    constructor(errors, typeRegistry) {
+        this.errors = errors !== null && errors !== void 0 ? errors : new LionErrorList();
+        this.typeRegistry = typeRegistry !== null && typeRegistry !== void 0 ? typeRegistry : new schema_1.TypeRegistry(this.errors);
+    }
+}
+exports.ParsingContext = ParsingContext;

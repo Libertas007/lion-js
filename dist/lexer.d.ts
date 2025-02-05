@@ -1,3 +1,4 @@
+import { ParsingContext } from "./context";
 import { ValuePrimitive } from "./types";
 export declare class Lexer {
     text: string;
@@ -6,7 +7,8 @@ export declare class Lexer {
     private col;
     private currentChar;
     private tokens;
-    constructor(text: string);
+    context: ParsingContext;
+    constructor(text: string, context: ParsingContext);
     process(): Token[];
     private skipWhitespace;
     private advance;

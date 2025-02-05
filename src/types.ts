@@ -1,3 +1,4 @@
+import { LionErrorList, ParsingContext } from "./context";
 import { Region } from "./lexer";
 import { Schema } from "./schema";
 
@@ -13,10 +14,16 @@ export class LionDocument {
     public doc: DocumentComponent;
     public schema: Schema;
     public hasSchema = false;
+    public context: ParsingContext;
 
-    constructor(document: DocumentComponent, schema?: Schema) {
+    constructor(
+        context: ParsingContext,
+        document: DocumentComponent,
+        schema?: Schema
+    ) {
+        this.context = context;
         this.doc = document;
-        this.schema = schema || new Schema();
+        this.schema = schema || new Schema(this.context);
         this.hasSchema = schema !== undefined;
     }
 
@@ -114,9 +121,15 @@ export class DocumentComponent extends Map<string, DocumentComponent> {
 
     public get(): ValuePrimitive;
     public get(key: string): DocumentComponent | undefined;
-    public get(key?: string): DocumentComponent | ValuePrimitive | undefined {
+    public get(
+        key?: string
+    ): DocumentComponent | ValuePrimitive | DocumentComponent[] | undefined {
         if (key === undefined) {
-            return this.value;
+            return this.value || this;
+        }
+
+        if (this.isArray) {
+            return this.toArray();
         }
         return super.get(key);
     }

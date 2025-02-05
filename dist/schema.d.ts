@@ -1,3 +1,4 @@
+import { LionErrorList, ParsingContext } from "./context";
 import { DocumentComponent } from "./types";
 /**
  * Represents a schema component that can validate a document component against a specified type.
@@ -5,7 +6,8 @@ import { DocumentComponent } from "./types";
 export declare class SchemaComponent {
     type: string;
     isOptional: boolean;
-    constructor(type: string, isOptional?: boolean);
+    context: ParsingContext;
+    constructor(type: string, isOptional: boolean | undefined, context: ParsingContext);
     validate(value: DocumentComponent): boolean;
 }
 /**
@@ -13,7 +15,8 @@ export declare class SchemaComponent {
  */
 export declare class Schema {
     components: Map<string, SchemaComponent>;
-    constructor();
+    context: ParsingContext;
+    constructor(context: ParsingContext);
     addComponent(name: string, component: SchemaComponent): void;
     validate(value: DocumentComponent, process?: boolean, clear?: boolean): boolean;
     toTypeCheck(): TypeCheck;
@@ -30,20 +33,21 @@ export declare class Schema {
  * @example
  * ```typescript
  * // Register a type
- * TypeRegistry.instance.registerType('MyType', myTypeCheckFunction);
+ * this.registerType('MyType', myTypeCheckFunction);
  *
  * // Register a sub-schema
- * TypeRegistry.instance.registerSubSchema('MySchema', mySchema);
+ * this.registerSubSchema('MySchema', mySchema);
  *
  * // Validate a value against a type
- * const isValid = TypeRegistry.instance.validateType('MyType', myValue);
+ * const isValid = this.validateType('MyType', myValue);
  * ```
  */
 export declare class TypeRegistry {
-    static instance: TypeRegistry;
     types: Map<string, TypeCheck>;
     subSchemas: Map<string, Schema>;
-    private constructor();
+    errors: LionErrorList;
+    constructor(errors: LionErrorList);
+    private loadBuiltInTypes;
     registerType(name: string, check: TypeCheck): void;
     registerSubSchema(name: string, schema: Schema): void;
     getTypeOrNull(type: string): TypeCheck | null;

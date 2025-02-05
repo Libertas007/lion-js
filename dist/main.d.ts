@@ -1,8 +1,8 @@
-import { LionError } from "./errors";
+import { LionError } from "./context";
 import { Schema } from "./schema";
 import { LionDocument } from "./types";
 export * from "./types";
-export * from "./errors";
+export * from "./context";
 export * from "./schema";
 /**
  * Parses the given text and returns a LionDocument.

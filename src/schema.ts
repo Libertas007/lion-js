@@ -1,4 +1,4 @@
-import { LionError, errors } from "./errors";
+import { LionError, LionErrorList, ParsingContext } from "./context";
 import { Region } from "./lexer";
 import { DocumentComponent } from "./types";
 
@@ -8,14 +8,20 @@ import { DocumentComponent } from "./types";
 export class SchemaComponent {
     public type: string;
     public isOptional: boolean;
+    public context: ParsingContext;
 
-    constructor(type: string, isOptional: boolean = false) {
+    constructor(
+        type: string,
+        isOptional: boolean = false,
+        context: ParsingContext
+    ) {
         this.type = type;
         this.isOptional = isOptional;
+        this.context = context;
     }
 
     public validate(value: DocumentComponent): boolean {
-        return TypeRegistry.instance.validateType(this.type, value);
+        return this.context.typeRegistry.validateType(this.type, value);
     }
 }
 
@@ -24,8 +30,10 @@ export class SchemaComponent {
  */
 export class Schema {
     public components: Map<string, SchemaComponent>;
+    public context: ParsingContext;
 
-    constructor() {
+    constructor(context: ParsingContext) {
+        this.context = context;
         this.components = new Map();
     }
 
@@ -39,7 +47,7 @@ export class Schema {
         clear: boolean = true
     ): boolean {
         if (value.isSingleValue()) {
-            errors.addError(
+            this.context.errors.addError(
                 new LionError(
                     `Expected an object, got a single value.`,
                     value.region || new Region(0, 0, 0, 0)
@@ -57,7 +65,7 @@ export class Schema {
                 (x) => !x.isOptional
             ).length;
 
-            errors.addError(
+            this.context.errors.addError(
                 new LionError(
                     nonOptional !== this.components.size
                         ? `Expected ${nonOptional}-${this.components.size} keys, got ${value.size}.`
@@ -72,7 +80,7 @@ export class Schema {
         );
 
         for (const key of differentKeys) {
-            errors.addError(
+            this.context.errors.addError(
                 new LionError(
                     `Unexpected key '${key}'.`,
                     value.get(key)?.region || new Region(0, 0, 0, 0)
@@ -82,7 +90,7 @@ export class Schema {
 
         for (const [key, component] of this.components) {
             if (!value.has(key) && !component.isOptional) {
-                errors.addError(
+                this.context.errors.addError(
                     new LionError(
                         `Expected key '${key}' to be present.`,
                         value.region || new Region(0, 0, 0, 0)
@@ -95,7 +103,7 @@ export class Schema {
                 value.has(key) &&
                 !component.validate(value.get(key) as DocumentComponent)
             ) {
-                errors.addError(
+                this.context.errors.addError(
                     new LionError(
                         `Expected key '${key}' to satisfy the constrains of type '${component.type}'.`,
                         value.get(key)?.region || new Region(0, 0, 0, 0)
@@ -104,11 +112,11 @@ export class Schema {
             }
         }
 
-        if (errors.errors.length > 0) {
+        if (this.context.errors.errors.length > 0) {
             return false;
         }
 
-        errors.errors = [];
+        this.context.errors.errors = [];
         return true;
     }
 
@@ -126,7 +134,7 @@ ${Array.from(this.components)
     .join(",\n")}
 }
         
-${Array.from(TypeRegistry.instance.subSchemas)
+${Array.from(this.context.typeRegistry.subSchemas)
     .map(([key, value]) => value.stringifyAsSubSchema(key))
     .join("\n")}
 `;
@@ -152,24 +160,72 @@ ${Array.from(this.components)
  * @example
  * ```typescript
  * // Register a type
- * TypeRegistry.instance.registerType('MyType', myTypeCheckFunction);
+ * this.registerType('MyType', myTypeCheckFunction);
  *
  * // Register a sub-schema
- * TypeRegistry.instance.registerSubSchema('MySchema', mySchema);
+ * this.registerSubSchema('MySchema', mySchema);
  *
  * // Validate a value against a type
- * const isValid = TypeRegistry.instance.validateType('MyType', myValue);
+ * const isValid = this.validateType('MyType', myValue);
  * ```
  */
 export class TypeRegistry {
-    public static instance: TypeRegistry = new TypeRegistry();
-
     public types: Map<string, TypeCheck>;
     public subSchemas: Map<string, Schema>;
 
-    private constructor() {
+    public errors: LionErrorList;
+
+    public constructor(errors: LionErrorList) {
         this.types = new Map();
         this.subSchemas = new Map();
+        this.errors = errors;
+
+        this.loadBuiltInTypes();
+    }
+
+    private loadBuiltInTypes() {
+        this.registerType(
+            "String",
+            (value: DocumentComponent) =>
+                value.isSingleValue() && typeof value.get() === "string"
+        );
+
+        this.registerType(
+            "Number",
+            (value: DocumentComponent) =>
+                value.isSingleValue() && typeof value.get() === "number"
+        );
+
+        this.registerType(
+            "Integer",
+            (value: DocumentComponent) =>
+                value.isSingleValue() &&
+                typeof value.get() === "number" &&
+                Number.isInteger(value.get())
+        );
+
+        this.registerType(
+            "Float",
+            (value: DocumentComponent) =>
+                value.isSingleValue() &&
+                typeof value.get() === "number" &&
+                !Number.isInteger(value.get())
+        );
+
+        this.registerType(
+            "Boolean",
+            (value: DocumentComponent) =>
+                value.isSingleValue() && typeof value.get() === "boolean"
+        );
+
+        this.registerType(
+            "Array",
+            (value: DocumentComponent, of: TypeCheck | undefined) =>
+                value.isArray &&
+                (of ? Array.from(value.values()).every((v) => of(v)) : true)
+        );
+
+        this.registerType("Any", (value: DocumentComponent) => true);
     }
 
     public registerType(name: string, check: TypeCheck) {
@@ -194,7 +250,7 @@ export class TypeRegistry {
         const [typeName, of] = this.extractType(type);
 
         if (!this.hasType(typeName)) {
-            errors.addError(
+            this.errors.addError(
                 new LionError(
                     `Type '${typeName}' does not exist.`,
                     new Region(0, 0, 0, 0)
@@ -210,7 +266,7 @@ export class TypeRegistry {
         const [typeName, of] = this.extractType(type);
 
         if (!this.hasType(typeName)) {
-            errors.addError(
+            this.errors.addError(
                 new LionError(
                     `Type '${typeName}' does not exist.`,
                     value.region || new Region(0, 0, 0, 0)
@@ -242,46 +298,3 @@ export class TypeRegistry {
  * @returns A boolean indicating whether the value passes the type check.
  */
 export type TypeCheck = (value: DocumentComponent, of?: TypeCheck) => boolean;
-
-TypeRegistry.instance.registerType(
-    "String",
-    (value: DocumentComponent) =>
-        value.isSingleValue() && typeof value.get() === "string"
-);
-
-TypeRegistry.instance.registerType(
-    "Number",
-    (value: DocumentComponent) =>
-        value.isSingleValue() && typeof value.get() === "number"
-);
-
-TypeRegistry.instance.registerType(
-    "Integer",
-    (value: DocumentComponent) =>
-        value.isSingleValue() &&
-        typeof value.get() === "number" &&
-        Number.isInteger(value.get())
-);
-
-TypeRegistry.instance.registerType(
-    "Float",
-    (value: DocumentComponent) =>
-        value.isSingleValue() &&
-        typeof value.get() === "number" &&
-        !Number.isInteger(value.get())
-);
-
-TypeRegistry.instance.registerType(
-    "Boolean",
-    (value: DocumentComponent) =>
-        value.isSingleValue() && typeof value.get() === "boolean"
-);
-
-TypeRegistry.instance.registerType(
-    "Array",
-    (value: DocumentComponent, of: TypeCheck | undefined) =>
-        value.isArray &&
-        (of ? Array.from(value.values()).every((v) => of(v)) : true)
-);
-
-TypeRegistry.instance.registerType("Any", (value: DocumentComponent) => true);

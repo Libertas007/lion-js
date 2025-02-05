@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TokenType = exports.Region = exports.Token = exports.Lexer = void 0;
-const errors_1 = require("./errors");
+const context_1 = require("./context");
 const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 class Lexer {
-    constructor(text) {
+    constructor(text, context) {
         this.pos = 0;
         this.line = 1;
         this.col = 1;
@@ -12,6 +12,7 @@ class Lexer {
         this.tokens = [];
         this.text = text;
         this.currentChar = text[0];
+        this.context = context;
     }
     process() {
         while (this.currentChar !== null) {
@@ -116,14 +117,14 @@ class Lexer {
                     this.currentChar === "o") {
                     if ((isFloat || containsLetter) &&
                         this.currentChar === ".") {
-                        errors_1.errors.addError(new errors_1.LionError("Invalid float.", new Region(this.line, this.line, this.col, this.col), containsLetter
+                        this.context.errors.addError(new context_1.LionError("Invalid float.", new Region(this.line, this.line, this.col, this.col), containsLetter
                             ? "A number marked as binary, hexadecimal or octal cannot contain a decimal point."
                             : "Multiple decimal points in a number. Try removing one."));
                         return this.tokens;
                     }
                     if ((containsLetter || isFloat) &&
                         letters.includes(this.currentChar)) {
-                        errors_1.errors.addError(new errors_1.LionError("Invalid number.", new Region(this.line, this.line, this.col, this.col), 'Number contains letters. Numbers cannot contain letters except for prefixes "0x", "0b" and "0o".'));
+                        this.context.errors.addError(new context_1.LionError("Invalid number.", new Region(this.line, this.line, this.col, this.col), 'Number contains letters. Numbers cannot contain letters except for prefixes "0x", "0b" and "0o".'));
                         return this.tokens;
                     }
                     if (this.currentChar === ".") {

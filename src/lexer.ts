@@ -1,4 +1,4 @@
-import { LionError, errors } from "./errors";
+import { LionError, ParsingContext } from "./context";
 import { ValuePrimitive } from "./types";
 
 const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -10,10 +10,12 @@ export class Lexer {
     private col: number = 1;
     private currentChar: string | null = null;
     private tokens: Token[] = [];
+    public context: ParsingContext;
 
-    constructor(text: string) {
+    constructor(text: string, context: ParsingContext) {
         this.text = text;
         this.currentChar = text[0];
+        this.context = context;
     }
 
     public process(): Token[] {
@@ -205,7 +207,7 @@ export class Lexer {
                         (isFloat || containsLetter) &&
                         this.currentChar === "."
                     ) {
-                        errors.addError(
+                        this.context.errors.addError(
                             new LionError(
                                 "Invalid float.",
                                 new Region(
@@ -226,7 +228,7 @@ export class Lexer {
                         (containsLetter || isFloat) &&
                         letters.includes(this.currentChar)
                     ) {
-                        errors.addError(
+                        this.context.errors.addError(
                             new LionError(
                                 "Invalid number.",
                                 new Region(
