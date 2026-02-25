@@ -87,13 +87,31 @@ class DocumentComponent extends Map {
         return Array.from(this.values());
     }
     get(key) {
+        var _a;
         if (key === undefined) {
-            return this.value || this;
+            return (_a = this.value) !== null && _a !== void 0 ? _a : this;
         }
         if (this.isArray) {
             return this.toArray();
         }
         return super.get(key);
+    }
+    toString() {
+        var _a;
+        if (this.isSingleValue()) {
+            return ((_a = this.value) === null || _a === void 0 ? void 0 : _a.toString()) || "";
+        }
+        if (this.isArray) {
+            return `[${this.toArray()
+                .map((e) => e.toString())
+                .join(", ")}]`;
+        }
+        let text = "{\n";
+        this.forEach((value, key) => {
+            text += `  ${key}: ${value.toString()},\n`;
+        });
+        text += "}";
+        return text;
     }
 }
 exports.DocumentComponent = DocumentComponent;

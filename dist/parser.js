@@ -200,7 +200,7 @@ class SchemaParser {
         return schema;
     }
     parsePair() {
-        var _a, _b;
+        var _a, _b, _c;
         const key = (_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.value;
         this.expect(lexer_1.TokenType.IDENTIFIER);
         let isOptional = false;
@@ -210,7 +210,9 @@ class SchemaParser {
         }
         this.expect(lexer_1.TokenType.COLON);
         const value = this.parseType();
-        this.advance();
+        if (((_c = this.currentToken) === null || _c === void 0 ? void 0 : _c.type) === lexer_1.TokenType.COMMA) {
+            this.advance();
+        }
         return [
             (key === null || key === void 0 ? void 0 : key.toString()) || "",
             new schema_1.SchemaComponent(value, isOptional, this.context),
@@ -258,6 +260,10 @@ class SchemaParser {
             return val;
         }
         else {
+            console.log({
+                tokens: this.tokens,
+                pos: this.pos,
+            });
             this.context.errors.addError(new context_1.LionError(`Expected the token type to be '${type}' (got ${(_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type}).`, (_d = (_c = this.currentToken) === null || _c === void 0 ? void 0 : _c.region) !== null && _d !== void 0 ? _d : new lexer_1.Region(0, 0, 0, 0)));
             this.advance();
             return "";

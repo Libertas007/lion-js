@@ -38,4 +38,5 @@ export declare class DocumentComponent extends Map<string, DocumentComponent> {
     toArray(): DocumentComponent[];
     get(): ValuePrimitive;
     get(key: string): DocumentComponent | undefined;
+    toString(): string;
 }

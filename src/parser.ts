@@ -60,7 +60,7 @@ export class Parser {
 
         const schemaEnd = this.tokens.findIndex(
             (token) =>
-                token.type === TokenType.MODIFIER && token.value === "@doc"
+                token.type === TokenType.MODIFIER && token.value === "@doc",
         );
 
         const parser = new SchemaParser(
@@ -68,7 +68,7 @@ export class Parser {
                 ...this.tokens.slice(this.pos, schemaEnd - 1),
                 new Token(TokenType.EOF, "", new Region(0, 0, 0, 0)),
             ],
-            this.context
+            this.context,
         );
         const schema = parser.parse();
 
@@ -93,7 +93,7 @@ export class Parser {
         this.expect(TokenType.RBRACE);
         this.unadvance();
         doc.region = start?.combine(
-            this.currentToken?.region || new Region(0, 0, 0, 0)
+            this.currentToken?.region || new Region(0, 0, 0, 0),
         );
         return doc;
     }
@@ -114,22 +114,22 @@ export class Parser {
         if (this.currentToken?.type === TokenType.STRING) {
             return new DocumentComponent(
                 this.currentToken.value,
-                this.currentToken.region
+                this.currentToken.region,
             );
         } else if (this.currentToken?.type === TokenType.INTEGER) {
             return new DocumentComponent(
                 parseInt(this.currentToken.value?.toString() || ""),
-                this.currentToken.region
+                this.currentToken.region,
             );
         } else if (this.currentToken?.type === TokenType.FLOAT) {
             return new DocumentComponent(
                 parseFloat(this.currentToken.value?.toString() || ""),
-                this.currentToken.region
+                this.currentToken.region,
             );
         } else if (this.currentToken?.type === TokenType.BOOLEAN) {
             return new DocumentComponent(
                 this.currentToken.value === "true",
-                this.currentToken.region
+                this.currentToken.region,
             );
         } else if (this.currentToken?.type === TokenType.LBRACKET) {
             return this.parseArray();
@@ -156,7 +156,7 @@ export class Parser {
         this.expect(TokenType.RBRACKET);
         this.unadvance();
         const region = start?.combine(
-            this.currentToken?.region || new Region(0, 0, 0, 0)
+            this.currentToken?.region || new Region(0, 0, 0, 0),
         );
         const component = DocumentComponent.fromArray(array);
         component.region = region;
@@ -182,8 +182,8 @@ export class Parser {
             this.context.errors.addError(
                 new LionError(
                     `Expected the token type to be '${type}' (got EOF).`,
-                    new Region(0, 0, 0, 0)
-                )
+                    new Region(0, 0, 0, 0),
+                ),
             );
             this.finish = true;
             return "";
@@ -194,8 +194,8 @@ export class Parser {
                 this.context.errors.addError(
                     new LionError(
                         `Expected the value to be '${value}' (got ${this.currentToken.value}).`,
-                        this.currentToken.region
-                    )
+                        this.currentToken.region,
+                    ),
                 );
                 this.advance();
                 return "";
@@ -208,8 +208,8 @@ export class Parser {
             this.context.errors.addError(
                 new LionError(
                     `Expected the token type to be '${type}' (got ${this.currentToken?.type}).`,
-                    this.currentToken?.region ?? new Region(0, 0, 0, 0)
-                )
+                    this.currentToken?.region ?? new Region(0, 0, 0, 0),
+                ),
             );
             this.advance();
             return "";
@@ -243,7 +243,7 @@ export class SchemaParser {
 
             this.context.typeRegistry.registerType(
                 name,
-                subSchema.toTypeCheck()
+                subSchema.toTypeCheck(),
             );
             this.context.typeRegistry.registerSubSchema(name, subSchema);
         }
@@ -274,7 +274,9 @@ export class SchemaParser {
         }
         this.expect(TokenType.COLON);
         const value = this.parseType();
-        this.advance();
+        if (this.currentToken?.type === TokenType.COMMA) {
+            this.advance();
+        }
         return [
             key?.toString() || "",
             new SchemaComponent(value, isOptional, this.context),
@@ -299,7 +301,7 @@ export class SchemaParser {
             this.currentToken = new Token(
                 TokenType.EOF,
                 "",
-                new Region(0, 0, 0, 0)
+                new Region(0, 0, 0, 0),
             );
         } else {
             this.currentToken = this.tokens[this.pos];
@@ -316,8 +318,8 @@ export class SchemaParser {
             this.context.errors.addError(
                 new LionError(
                     `Expected the token type to be '${type}' (got EOF).`,
-                    new Region(0, 0, 0, 0)
-                )
+                    new Region(0, 0, 0, 0),
+                ),
             );
             this.finish = true;
             return "";
@@ -328,8 +330,8 @@ export class SchemaParser {
                 this.context.errors.addError(
                     new LionError(
                         `Expected the value to be '${value}' (got ${this.currentToken.value}).`,
-                        this.currentToken.region
-                    )
+                        this.currentToken.region,
+                    ),
                 );
                 this.advance();
                 return "";
@@ -339,11 +341,16 @@ export class SchemaParser {
 
             return val;
         } else {
+            console.log({
+                tokens: this.tokens,
+                pos: this.pos,
+            });
+
             this.context.errors.addError(
                 new LionError(
                     `Expected the token type to be '${type}' (got ${this.currentToken?.type}).`,
-                    this.currentToken?.region ?? new Region(0, 0, 0, 0)
-                )
+                    this.currentToken?.region ?? new Region(0, 0, 0, 0),
+                ),
             );
             this.advance();
             return "";

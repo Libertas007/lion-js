@@ -19,7 +19,7 @@ export class LionDocument {
     constructor(
         context: ParsingContext,
         document: DocumentComponent,
-        schema?: Schema
+        schema?: Schema,
     ) {
         this.context = context;
         this.doc = document;
@@ -119,18 +119,35 @@ export class DocumentComponent extends Map<string, DocumentComponent> {
         return Array.from(this.values());
     }
 
-    public get(): ValuePrimitive;
-    public get(key: string): DocumentComponent | undefined;
-    public get(
-        key?: string
+    public override get(): ValuePrimitive;
+    public override get(key: string): DocumentComponent | undefined;
+    public override get(
+        key?: string,
     ): DocumentComponent | ValuePrimitive | DocumentComponent[] | undefined {
         if (key === undefined) {
-            return this.value || this;
+            return this.value ?? this;
         }
 
         if (this.isArray) {
             return this.toArray();
         }
         return super.get(key);
+    }
+
+    public override toString(): string {
+        if (this.isSingleValue()) {
+            return this.value?.toString() || "";
+        }
+        if (this.isArray) {
+            return `[${this.toArray()
+                .map((e) => e.toString())
+                .join(", ")}]`;
+        }
+        let text = "{\n";
+        this.forEach((value, key) => {
+            text += `  ${key}: ${value.toString()},\n`;
+        });
+        text += "}";
+        return text;
     }
 }

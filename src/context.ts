@@ -24,9 +24,9 @@ export class LionError {
 
     public toString(): string {
         if (this.description) {
-            return `${this.message} at ${this.region.startLine}:${this.region.startCol}\n${this.description}`;
+            return `${this.message} At ${this.region.startLine}:${this.region.startCol}\n${this.description}`;
         }
-        return `${this.message} at ${this.region.startLine}:${this.region.startCol}`;
+        return `${this.message} At ${this.region.startLine}:${this.region.startCol}`;
     }
 
     public process() {

@@ -30,32 +30,34 @@ class Schema {
     }
     validate(value, process = false, clear = true) {
         var _a, _b;
+        const errorList = new context_1.LionErrorList();
         if (value.isSingleValue()) {
-            this.context.errors.addError(new context_1.LionError(`Expected an object, got a single value.`, value.region || new lexer_1.Region(0, 0, 0, 0)));
+            errorList.addError(new context_1.LionError(`Expected an object, got a single value.`, value.region || new lexer_1.Region(0, 0, 0, 0)));
         }
         if (value.size <
             Array.from(this.components.values()).filter((x) => !x.isOptional).length ||
             value.size > this.components.size) {
             const nonOptional = Array.from(this.components.values()).filter((x) => !x.isOptional).length;
-            this.context.errors.addError(new context_1.LionError(nonOptional !== this.components.size
+            errorList.addError(new context_1.LionError(nonOptional !== this.components.size
                 ? `Expected ${nonOptional}-${this.components.size} keys, got ${value.size}.`
                 : `Expected ${this.components.size} keys, got ${value.size}.`, value.region || new lexer_1.Region(0, 0, 0, 0)));
         }
         let differentKeys = Array.from(value.keys()).filter((x) => !this.components.has(x));
         for (const key of differentKeys) {
-            this.context.errors.addError(new context_1.LionError(`Unexpected key '${key}'.`, ((_a = value.get(key)) === null || _a === void 0 ? void 0 : _a.region) || new lexer_1.Region(0, 0, 0, 0)));
+            errorList.addError(new context_1.LionError(`Unexpected key '${key}'.`, ((_a = value.get(key)) === null || _a === void 0 ? void 0 : _a.region) || new lexer_1.Region(0, 0, 0, 0)));
         }
         for (const [key, component] of this.components) {
             if (!value.has(key) && !component.isOptional) {
-                this.context.errors.addError(new context_1.LionError(`Expected key '${key}' to be present.`, value.region || new lexer_1.Region(0, 0, 0, 0)));
+                errorList.addError(new context_1.LionError(`Expected key '${key}' to be present.`, value.region || new lexer_1.Region(0, 0, 0, 0)));
                 continue;
             }
             if (value.has(key) &&
                 !component.validate(value.get(key))) {
-                this.context.errors.addError(new context_1.LionError(`Expected key '${key}' to satisfy the constrains of type '${component.type}'.`, ((_b = value.get(key)) === null || _b === void 0 ? void 0 : _b.region) || new lexer_1.Region(0, 0, 0, 0)));
+                errorList.addError(new context_1.LionError(`Expected key '${key}' to satisfy the constrains of type '${component.type}'.`, ((_b = value.get(key)) === null || _b === void 0 ? void 0 : _b.region) || new lexer_1.Region(0, 0, 0, 0)));
             }
         }
-        if (this.context.errors.errors.length > 0) {
+        if (errorList.errors.length > 0) {
+            this.context.errors.errors.push(...errorList.errors);
             return false;
         }
         this.context.errors.errors = [];

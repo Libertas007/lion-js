@@ -13,7 +13,7 @@ export class SchemaComponent {
     constructor(
         type: string,
         isOptional: boolean = false,
-        context: ParsingContext
+        context: ParsingContext,
     ) {
         this.type = type;
         this.isOptional = isOptional;
@@ -44,57 +44,59 @@ export class Schema {
     public validate(
         value: DocumentComponent,
         process: boolean = false,
-        clear: boolean = true
+        clear: boolean = true,
     ): boolean {
+        const errorList = new LionErrorList();
+
         if (value.isSingleValue()) {
-            this.context.errors.addError(
+            errorList.addError(
                 new LionError(
                     `Expected an object, got a single value.`,
-                    value.region || new Region(0, 0, 0, 0)
-                )
+                    value.region || new Region(0, 0, 0, 0),
+                ),
             );
         }
         if (
             value.size <
                 Array.from(this.components.values()).filter(
-                    (x) => !x.isOptional
+                    (x) => !x.isOptional,
                 ).length ||
             value.size > this.components.size
         ) {
             const nonOptional = Array.from(this.components.values()).filter(
-                (x) => !x.isOptional
+                (x) => !x.isOptional,
             ).length;
 
-            this.context.errors.addError(
+            errorList.addError(
                 new LionError(
                     nonOptional !== this.components.size
                         ? `Expected ${nonOptional}-${this.components.size} keys, got ${value.size}.`
                         : `Expected ${this.components.size} keys, got ${value.size}.`,
-                    value.region || new Region(0, 0, 0, 0)
-                )
+                    value.region || new Region(0, 0, 0, 0),
+                ),
             );
         }
 
         let differentKeys = Array.from(value.keys()).filter(
-            (x) => !this.components.has(x)
+            (x) => !this.components.has(x),
         );
 
         for (const key of differentKeys) {
-            this.context.errors.addError(
+            errorList.addError(
                 new LionError(
                     `Unexpected key '${key}'.`,
-                    value.get(key)?.region || new Region(0, 0, 0, 0)
-                )
+                    value.get(key)?.region || new Region(0, 0, 0, 0),
+                ),
             );
         }
 
         for (const [key, component] of this.components) {
             if (!value.has(key) && !component.isOptional) {
-                this.context.errors.addError(
+                errorList.addError(
                     new LionError(
                         `Expected key '${key}' to be present.`,
-                        value.region || new Region(0, 0, 0, 0)
-                    )
+                        value.region || new Region(0, 0, 0, 0),
+                    ),
                 );
                 continue;
             }
@@ -103,16 +105,17 @@ export class Schema {
                 value.has(key) &&
                 !component.validate(value.get(key) as DocumentComponent)
             ) {
-                this.context.errors.addError(
+                errorList.addError(
                     new LionError(
                         `Expected key '${key}' to satisfy the constrains of type '${component.type}'.`,
-                        value.get(key)?.region || new Region(0, 0, 0, 0)
-                    )
+                        value.get(key)?.region || new Region(0, 0, 0, 0),
+                    ),
                 );
             }
         }
 
-        if (this.context.errors.errors.length > 0) {
+        if (errorList.errors.length > 0) {
+            this.context.errors.errors.push(...errorList.errors);
             return false;
         }
 
@@ -187,13 +190,13 @@ export class TypeRegistry {
         this.registerType(
             "String",
             (value: DocumentComponent) =>
-                value.isSingleValue() && typeof value.get() === "string"
+                value.isSingleValue() && typeof value.get() === "string",
         );
 
         this.registerType(
             "Number",
             (value: DocumentComponent) =>
-                value.isSingleValue() && typeof value.get() === "number"
+                value.isSingleValue() && typeof value.get() === "number",
         );
 
         this.registerType(
@@ -201,7 +204,7 @@ export class TypeRegistry {
             (value: DocumentComponent) =>
                 value.isSingleValue() &&
                 typeof value.get() === "number" &&
-                Number.isInteger(value.get())
+                Number.isInteger(value.get()),
         );
 
         this.registerType(
@@ -209,20 +212,20 @@ export class TypeRegistry {
             (value: DocumentComponent) =>
                 value.isSingleValue() &&
                 typeof value.get() === "number" &&
-                !Number.isInteger(value.get())
+                !Number.isInteger(value.get()),
         );
 
         this.registerType(
             "Boolean",
             (value: DocumentComponent) =>
-                value.isSingleValue() && typeof value.get() === "boolean"
+                value.isSingleValue() && typeof value.get() === "boolean",
         );
 
         this.registerType(
             "Array",
             (value: DocumentComponent, of: TypeCheck | undefined) =>
                 value.isArray &&
-                (of ? Array.from(value.values()).every((v) => of(v)) : true)
+                (of ? Array.from(value.values()).every((v) => of(v)) : true),
         );
 
         this.registerType("Any", (value: DocumentComponent) => true);
@@ -253,8 +256,8 @@ export class TypeRegistry {
             this.errors.addError(
                 new LionError(
                     `Type '${typeName}' does not exist.`,
-                    new Region(0, 0, 0, 0)
-                )
+                    new Region(0, 0, 0, 0),
+                ),
             );
         }
         return this.types.get(typeName) as TypeCheck;
@@ -269,8 +272,8 @@ export class TypeRegistry {
             this.errors.addError(
                 new LionError(
                     `Type '${typeName}' does not exist.`,
-                    value.region || new Region(0, 0, 0, 0)
-                )
+                    value.region || new Region(0, 0, 0, 0),
+                ),
             );
             return false;
         }
