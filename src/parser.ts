@@ -1,6 +1,11 @@
 import { LionError, ParsingContext } from "./context";
 import { Region, Token, TokenType } from "./lexer";
-import { Schema, SchemaComponent, TypeRegistry } from "./schema";
+import {
+    MultipleSchemaComponent,
+    Schema,
+    SchemaComponent,
+    TypeRegistry,
+} from "./schema";
 import { DocumentComponent, LionDocument, ValuePrimitive } from "./types";
 
 export class Parser {
@@ -273,26 +278,43 @@ export class SchemaParser {
             isOptional = true;
         }
         this.expect(TokenType.COLON);
-        const value = this.parseType();
+        const value = this.parseType(isOptional);
         if (this.currentToken?.type === TokenType.COMMA) {
             this.advance();
         }
-        return [
-            key?.toString() || "",
-            new SchemaComponent(value, isOptional, this.context),
-        ];
+
+        return [key?.toString() || "", value];
     }
 
-    private parseType(): string {
+    private parseType(isOptional: boolean = false): SchemaComponent {
+        let types: SchemaComponent[] = [];
+        let of: SchemaComponent | undefined = undefined;
+
         let type = "";
         type += this.expect(TokenType.IDENTIFIER);
         if (this.currentToken?.type === TokenType.OF_TYPE_START) {
-            type += this.expect(TokenType.OF_TYPE_START);
-            type += this.parseType();
-            type += this.expect(TokenType.OF_TYPE_END);
+            this.expect(TokenType.OF_TYPE_START);
+            of = this.parseType();
+            this.expect(TokenType.OF_TYPE_END);
         }
 
-        return type;
+        types.push(new SchemaComponent(type, isOptional, this.context, of));
+
+        if (this.currentToken?.type === TokenType.PIPE) {
+            this.expect(TokenType.PIPE);
+            let newTypes = this.parseType();
+
+            if (newTypes instanceof MultipleSchemaComponent) {
+                types = types.concat(newTypes.types);
+            } else {
+                types.push(newTypes);
+            }
+        }
+
+        if (types.length === 1) {
+            return types[0];
+        }
+        return new MultipleSchemaComponent(types, isOptional, this.context);
     }
 
     protected advance() {

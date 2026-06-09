@@ -38,9 +38,9 @@ export class Lexer {
                 this.tokens.push(
                     new Token(
                         TokenType.OPTIONAL_PROPERTY,
-                        "{",
-                        new Region(this.line, this.line, this.col, this.col)
-                    )
+                        "?",
+                        new Region(this.line, this.line, this.col, this.col),
+                    ),
                 );
                 this.advance();
                 continue;
@@ -50,8 +50,8 @@ export class Lexer {
                     new Token(
                         TokenType.LBRACE,
                         "{",
-                        new Region(this.line, this.line, this.col, this.col)
-                    )
+                        new Region(this.line, this.line, this.col, this.col),
+                    ),
                 );
                 this.advance();
                 continue;
@@ -61,8 +61,8 @@ export class Lexer {
                     new Token(
                         TokenType.RBRACE,
                         "}",
-                        new Region(this.line, this.line, this.col, this.col)
-                    )
+                        new Region(this.line, this.line, this.col, this.col),
+                    ),
                 );
                 this.advance();
                 continue;
@@ -72,8 +72,8 @@ export class Lexer {
                     new Token(
                         TokenType.LBRACKET,
                         "[",
-                        new Region(this.line, this.line, this.col, this.col)
-                    )
+                        new Region(this.line, this.line, this.col, this.col),
+                    ),
                 );
                 this.advance();
                 continue;
@@ -83,8 +83,8 @@ export class Lexer {
                     new Token(
                         TokenType.RBRACKET,
                         "]",
-                        new Region(this.line, this.line, this.col, this.col)
-                    )
+                        new Region(this.line, this.line, this.col, this.col),
+                    ),
                 );
                 this.advance();
                 continue;
@@ -94,8 +94,8 @@ export class Lexer {
                     new Token(
                         TokenType.OF_TYPE_START,
                         "<",
-                        new Region(this.line, this.line, this.col, this.col)
-                    )
+                        new Region(this.line, this.line, this.col, this.col),
+                    ),
                 );
                 this.advance();
                 continue;
@@ -105,8 +105,19 @@ export class Lexer {
                     new Token(
                         TokenType.OF_TYPE_END,
                         ">",
-                        new Region(this.line, this.line, this.col, this.col)
-                    )
+                        new Region(this.line, this.line, this.col, this.col),
+                    ),
+                );
+                this.advance();
+                continue;
+            }
+            if (this.currentChar === "|") {
+                this.tokens.push(
+                    new Token(
+                        TokenType.PIPE,
+                        "|",
+                        new Region(this.line, this.line, this.col, this.col),
+                    ),
                 );
                 this.advance();
                 continue;
@@ -116,8 +127,8 @@ export class Lexer {
                     new Token(
                         TokenType.COLON,
                         ":",
-                        new Region(this.line, this.line, this.col, this.col)
-                    )
+                        new Region(this.line, this.line, this.col, this.col),
+                    ),
                 );
                 this.advance();
                 continue;
@@ -127,8 +138,8 @@ export class Lexer {
                     new Token(
                         TokenType.COMMA,
                         ",",
-                        new Region(this.line, this.line, this.col, this.col)
-                    )
+                        new Region(this.line, this.line, this.col, this.col),
+                    ),
                 );
                 this.advance();
                 continue;
@@ -148,8 +159,8 @@ export class Lexer {
                     new Token(
                         TokenType.STRING,
                         value,
-                        new Region(startLine, this.line, startCol, this.col)
-                    )
+                        new Region(startLine, this.line, startCol, this.col),
+                    ),
                 );
                 continue;
             }
@@ -161,8 +172,13 @@ export class Lexer {
                     new Token(
                         TokenType.BOOLEAN,
                         true,
-                        new Region(this.line, this.line, this.col - 4, this.col)
-                    )
+                        new Region(
+                            this.line,
+                            this.line,
+                            this.col - 4,
+                            this.col,
+                        ),
+                    ),
                 );
                 this.pos += 3;
                 this.advance();
@@ -176,8 +192,13 @@ export class Lexer {
                     new Token(
                         TokenType.BOOLEAN,
                         false,
-                        new Region(this.line, this.line, this.col - 5, this.col)
-                    )
+                        new Region(
+                            this.line,
+                            this.line,
+                            this.col - 5,
+                            this.col,
+                        ),
+                    ),
                 );
                 this.pos += 4;
                 this.advance();
@@ -214,12 +235,12 @@ export class Lexer {
                                     this.line,
                                     this.line,
                                     this.col,
-                                    this.col
+                                    this.col,
                                 ),
                                 containsLetter
                                     ? "A number marked as binary, hexadecimal or octal cannot contain a decimal point."
-                                    : "Multiple decimal points in a number. Try removing one."
-                            )
+                                    : "Multiple decimal points in a number. Try removing one.",
+                            ),
                         );
                         return this.tokens;
                     }
@@ -235,10 +256,10 @@ export class Lexer {
                                     this.line,
                                     this.line,
                                     this.col,
-                                    this.col
+                                    this.col,
                                 ),
-                                'Number contains letters. Numbers cannot contain letters except for prefixes "0x", "0b" and "0o".'
-                            )
+                                'Number contains letters. Numbers cannot contain letters except for prefixes "0x", "0b" and "0o".',
+                            ),
                         );
                         return this.tokens;
                     }
@@ -259,8 +280,13 @@ export class Lexer {
                         new Token(
                             TokenType.INTEGER,
                             parseInt(value.replace("b", ""), 2),
-                            new Region(startLine, this.line, startCol, this.col)
-                        )
+                            new Region(
+                                startLine,
+                                this.line,
+                                startCol,
+                                this.col,
+                            ),
+                        ),
                     );
                     continue;
                 }
@@ -269,8 +295,13 @@ export class Lexer {
                         new Token(
                             TokenType.INTEGER,
                             parseInt(value.replace("x", ""), 16),
-                            new Region(startLine, this.line, startCol, this.col)
-                        )
+                            new Region(
+                                startLine,
+                                this.line,
+                                startCol,
+                                this.col,
+                            ),
+                        ),
                     );
                     continue;
                 }
@@ -280,8 +311,13 @@ export class Lexer {
                         new Token(
                             TokenType.INTEGER,
                             parseInt(value.replace("o", ""), 8),
-                            new Region(startLine, this.line, startCol, this.col)
-                        )
+                            new Region(
+                                startLine,
+                                this.line,
+                                startCol,
+                                this.col,
+                            ),
+                        ),
                     );
                     continue;
                 }
@@ -291,8 +327,13 @@ export class Lexer {
                         new Token(
                             TokenType.FLOAT,
                             parseFloat(value),
-                            new Region(startLine, this.line, startCol, this.col)
-                        )
+                            new Region(
+                                startLine,
+                                this.line,
+                                startCol,
+                                this.col,
+                            ),
+                        ),
                     );
                     continue;
                 }
@@ -301,8 +342,8 @@ export class Lexer {
                     new Token(
                         TokenType.INTEGER,
                         parseInt(value, 10),
-                        new Region(startLine, this.line, startCol, this.col)
-                    )
+                        new Region(startLine, this.line, startCol, this.col),
+                    ),
                 );
                 continue;
             }
@@ -319,8 +360,8 @@ export class Lexer {
                     new Token(
                         TokenType.IDENTIFIER,
                         value,
-                        new Region(startLine, this.line, startCol, this.col)
-                    )
+                        new Region(startLine, this.line, startCol, this.col),
+                    ),
                 );
                 continue;
             }
@@ -338,8 +379,8 @@ export class Lexer {
                     new Token(
                         TokenType.MODIFIER,
                         value,
-                        new Region(startLine, this.line, startCol, this.col)
-                    )
+                        new Region(startLine, this.line, startCol, this.col),
+                    ),
                 );
                 continue;
             }
@@ -351,8 +392,8 @@ export class Lexer {
             new Token(
                 TokenType.EOF,
                 "",
-                new Region(this.line, this.line, this.col, this.col)
-            )
+                new Region(this.line, this.line, this.col, this.col),
+            ),
         );
         return this.tokens;
     }
@@ -396,7 +437,7 @@ export class Region {
         startLine: number,
         endLine: number,
         startCol: number,
-        endCol: number
+        endCol: number,
     ) {
         this.startLine = startLine;
         this.endLine = endLine;
@@ -413,7 +454,7 @@ export class Region {
             Math.min(this.startLine, region.startLine),
             Math.max(this.endLine, region.endLine),
             Math.min(this.startCol, region.startCol),
-            Math.max(this.endCol, region.endCol)
+            Math.max(this.endCol, region.endCol),
         );
     }
 }
@@ -435,4 +476,5 @@ export enum TokenType {
     OF_TYPE_END = "OF_TYPE_END",
     EOF = "EOF",
     OPTIONAL_PROPERTY = "OPTIONAL_PROPERTY",
+    PIPE = "PIPE",
 }

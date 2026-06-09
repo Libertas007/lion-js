@@ -1,22 +1,40 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TypeRegistry = exports.Schema = exports.SchemaComponent = void 0;
+exports.TypeRegistry = exports.Schema = exports.MultipleSchemaComponent = exports.SchemaComponent = void 0;
 const context_1 = require("./context");
 const lexer_1 = require("./lexer");
 /**
  * Represents a schema component that can validate a document component against a specified type.
  */
 class SchemaComponent {
-    constructor(type, isOptional = false, context) {
+    constructor(type, isOptional = false, context, of) {
         this.type = type;
         this.isOptional = isOptional;
         this.context = context;
+        this.of = of;
     }
     validate(value) {
-        return this.context.typeRegistry.validateType(this.type, value);
+        return this.context.typeRegistry.validateType(this, value);
+    }
+    toString() {
+        return `${this.type}${this.of ? `<${this.of.toString()}>` : ""}${this.isOptional ? "?" : ""}`;
     }
 }
 exports.SchemaComponent = SchemaComponent;
+class MultipleSchemaComponent extends SchemaComponent {
+    constructor(types, isOptional = false, context) {
+        super("", isOptional, context);
+        this.types = types;
+    }
+    validate(value) {
+        return this.types.some((type) => type.validate(value));
+    }
+    toString() {
+        return (this.types.map((type) => type.toString()).join(" | ") +
+            (this.isOptional ? "?" : ""));
+    }
+}
+exports.MultipleSchemaComponent = MultipleSchemaComponent;
 /**
  * Represents a schema.
  */
@@ -53,7 +71,7 @@ class Schema {
             }
             if (value.has(key) &&
                 !component.validate(value.get(key))) {
-                errorList.addError(new context_1.LionError(`Expected key '${key}' to satisfy the constrains of type '${component.type}'.`, ((_b = value.get(key)) === null || _b === void 0 ? void 0 : _b.region) || new lexer_1.Region(0, 0, 0, 0)));
+                errorList.addError(new context_1.LionError(`Expected key '${key}' to satisfy the constrains of type '${component.toString()}'.`, ((_b = value.get(key)) === null || _b === void 0 ? void 0 : _b.region) || new lexer_1.Region(0, 0, 0, 0)));
             }
         }
         if (errorList.errors.length > 0) {
@@ -73,7 +91,7 @@ class Schema {
     stringify() {
         return `@definition {
 ${Array.from(this.components)
-            .map(([key, value]) => `\t${key}: ${value.type}`)
+            .map(([key, value]) => `\t${key}: ${value.toString()}`)
             .join(",\n")}
 }
         
@@ -85,7 +103,7 @@ ${Array.from(this.context.typeRegistry.subSchemas)
     stringifyAsSubSchema(name) {
         return `@subschema ${name} {
 ${Array.from(this.components)
-            .map(([key, value]) => `\t${key}: ${value.type}`)
+            .map(([key, value]) => `\t${key}: ${value.toString()}`)
             .join(",\n")}
 }       
         `;
@@ -129,7 +147,9 @@ class TypeRegistry {
             !Number.isInteger(value.get()));
         this.registerType("Boolean", (value) => value.isSingleValue() && typeof value.get() === "boolean");
         this.registerType("Array", (value, of) => value.isArray &&
-            (of ? Array.from(value.values()).every((v) => of(v)) : true));
+            (of
+                ? Array.from(value.values()).every((v) => of.validate(v))
+                : true));
         this.registerType("Any", (value) => true);
     }
     registerType(name, check) {
@@ -137,10 +157,6 @@ class TypeRegistry {
     }
     registerSubSchema(name, schema) {
         this.subSchemas.set(name, schema);
-    }
-    getTypeOrNull(type) {
-        const [typeName, of] = this.extractType(type);
-        return this.types.get(typeName) || null;
     }
     hasType(type) {
         return this.types.has(type);
@@ -155,19 +171,19 @@ class TypeRegistry {
     validateType(type, value) {
         // console.log("================================start");
         // console.log({ type, value });
-        const [typeName, of] = this.extractType(type);
+        const { type: typeName, of } = type;
         if (!this.hasType(typeName)) {
-            this.errors.addError(new context_1.LionError(`Type '${typeName}' does not exist.`, value.region || new lexer_1.Region(0, 0, 0, 0)));
+            this.errors.addError(new context_1.LionError(`Type '${type.toString()}' does not exist.`, value.region || new lexer_1.Region(0, 0, 0, 0)));
             return false;
         }
         const check = this.getType(typeName);
-        const val = check(value, of ? this.getType(of) : undefined);
+        const val = check(value, of);
         // console.log({ value, typeName, of, val, check });
         // console.log("================================end");
         return val;
     }
     extractType(type) {
-        const match = /(\w+)<([\w<>]+)>/g.exec(type);
+        const match = /(\w+)<([\w|<>]+)>/g.exec(type);
         return match && match[2] ? [match[1], match[2]] : [type];
     }
 }

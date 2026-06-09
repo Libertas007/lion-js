@@ -31,7 +31,7 @@ class Lexer {
                 this.col += 4;
             }
             if (this.currentChar === "?") {
-                this.tokens.push(new Token(TokenType.OPTIONAL_PROPERTY, "{", new Region(this.line, this.line, this.col, this.col)));
+                this.tokens.push(new Token(TokenType.OPTIONAL_PROPERTY, "?", new Region(this.line, this.line, this.col, this.col)));
                 this.advance();
                 continue;
             }
@@ -62,6 +62,11 @@ class Lexer {
             }
             if (this.currentChar === ">") {
                 this.tokens.push(new Token(TokenType.OF_TYPE_END, ">", new Region(this.line, this.line, this.col, this.col)));
+                this.advance();
+                continue;
+            }
+            if (this.currentChar === "|") {
+                this.tokens.push(new Token(TokenType.PIPE, "|", new Region(this.line, this.line, this.col, this.col)));
                 this.advance();
                 continue;
             }
@@ -241,4 +246,5 @@ var TokenType;
     TokenType["OF_TYPE_END"] = "OF_TYPE_END";
     TokenType["EOF"] = "EOF";
     TokenType["OPTIONAL_PROPERTY"] = "OPTIONAL_PROPERTY";
+    TokenType["PIPE"] = "PIPE";
 })(TokenType || (exports.TokenType = TokenType = {}));

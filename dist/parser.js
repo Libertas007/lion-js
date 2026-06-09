@@ -209,25 +209,38 @@ class SchemaParser {
             isOptional = true;
         }
         this.expect(lexer_1.TokenType.COLON);
-        const value = this.parseType();
+        const value = this.parseType(isOptional);
         if (((_c = this.currentToken) === null || _c === void 0 ? void 0 : _c.type) === lexer_1.TokenType.COMMA) {
             this.advance();
         }
-        return [
-            (key === null || key === void 0 ? void 0 : key.toString()) || "",
-            new schema_1.SchemaComponent(value, isOptional, this.context),
-        ];
+        return [(key === null || key === void 0 ? void 0 : key.toString()) || "", value];
     }
-    parseType() {
-        var _a;
+    parseType(isOptional = false) {
+        var _a, _b;
+        let types = [];
+        let of = undefined;
         let type = "";
         type += this.expect(lexer_1.TokenType.IDENTIFIER);
         if (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) === lexer_1.TokenType.OF_TYPE_START) {
-            type += this.expect(lexer_1.TokenType.OF_TYPE_START);
-            type += this.parseType();
-            type += this.expect(lexer_1.TokenType.OF_TYPE_END);
+            this.expect(lexer_1.TokenType.OF_TYPE_START);
+            of = this.parseType();
+            this.expect(lexer_1.TokenType.OF_TYPE_END);
         }
-        return type;
+        types.push(new schema_1.SchemaComponent(type, isOptional, this.context, of));
+        if (((_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.type) === lexer_1.TokenType.PIPE) {
+            this.expect(lexer_1.TokenType.PIPE);
+            let newTypes = this.parseType();
+            if (newTypes instanceof schema_1.MultipleSchemaComponent) {
+                types = types.concat(newTypes.types);
+            }
+            else {
+                types.push(newTypes);
+            }
+        }
+        if (types.length === 1) {
+            return types[0];
+        }
+        return new schema_1.MultipleSchemaComponent(types, isOptional, this.context);
     }
     advance() {
         this.pos += 1;

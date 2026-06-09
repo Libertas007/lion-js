@@ -6,22 +6,54 @@ import { DocumentComponent } from "./types";
  * Represents a schema component that can validate a document component against a specified type.
  */
 export class SchemaComponent {
+    // Multiple types => OR condition
     public type: string;
-    public isOptional: boolean;
+    public of?: SchemaComponent;
     public context: ParsingContext;
+    public isOptional: boolean;
 
     constructor(
         type: string,
         isOptional: boolean = false,
         context: ParsingContext,
+        of?: SchemaComponent,
     ) {
         this.type = type;
         this.isOptional = isOptional;
         this.context = context;
+        this.of = of;
     }
 
     public validate(value: DocumentComponent): boolean {
-        return this.context.typeRegistry.validateType(this.type, value);
+        return this.context.typeRegistry.validateType(this, value);
+    }
+
+    public toString(): string {
+        return `${this.type}${this.of ? `<${this.of.toString()}>` : ""}${this.isOptional ? "?" : ""}`;
+    }
+}
+
+export class MultipleSchemaComponent extends SchemaComponent {
+    public types: SchemaComponent[];
+
+    constructor(
+        types: SchemaComponent[],
+        isOptional: boolean = false,
+        context: ParsingContext,
+    ) {
+        super("", isOptional, context);
+        this.types = types;
+    }
+
+    override validate(value: DocumentComponent): boolean {
+        return this.types.some((type) => type.validate(value));
+    }
+
+    override toString(): string {
+        return (
+            this.types.map((type) => type.toString()).join(" | ") +
+            (this.isOptional ? "?" : "")
+        );
     }
 }
 
@@ -107,7 +139,7 @@ export class Schema {
             ) {
                 errorList.addError(
                     new LionError(
-                        `Expected key '${key}' to satisfy the constrains of type '${component.type}'.`,
+                        `Expected key '${key}' to satisfy the constrains of type '${component.toString()}'.`,
                         value.get(key)?.region || new Region(0, 0, 0, 0),
                     ),
                 );
@@ -133,7 +165,7 @@ export class Schema {
     public stringify(): string {
         return `@definition {
 ${Array.from(this.components)
-    .map(([key, value]) => `\t${key}: ${value.type}`)
+    .map(([key, value]) => `\t${key}: ${value.toString()}`)
     .join(",\n")}
 }
         
@@ -146,7 +178,7 @@ ${Array.from(this.context.typeRegistry.subSchemas)
     public stringifyAsSubSchema(name: string): string {
         return `@subschema ${name} {
 ${Array.from(this.components)
-    .map(([key, value]) => `\t${key}: ${value.type}`)
+    .map(([key, value]) => `\t${key}: ${value.toString()}`)
     .join(",\n")}
 }       
         `;
@@ -223,9 +255,11 @@ export class TypeRegistry {
 
         this.registerType(
             "Array",
-            (value: DocumentComponent, of: TypeCheck | undefined) =>
+            (value: DocumentComponent, of: SchemaComponent | undefined) =>
                 value.isArray &&
-                (of ? Array.from(value.values()).every((v) => of(v)) : true),
+                (of
+                    ? Array.from(value.values()).every((v) => of.validate(v))
+                    : true),
         );
 
         this.registerType("Any", (value: DocumentComponent) => true);
@@ -237,12 +271,6 @@ export class TypeRegistry {
 
     public registerSubSchema(name: string, schema: Schema) {
         this.subSchemas.set(name, schema);
-    }
-
-    public getTypeOrNull(type: string): TypeCheck | null {
-        const [typeName, of] = this.extractType(type);
-
-        return this.types.get(typeName) || null;
     }
 
     public hasType(type: string): boolean {
@@ -263,15 +291,19 @@ export class TypeRegistry {
         return this.types.get(typeName) as TypeCheck;
     }
 
-    public validateType(type: string, value: DocumentComponent): boolean {
+    public validateType(
+        type: SchemaComponent,
+        value: DocumentComponent,
+    ): boolean {
         // console.log("================================start");
         // console.log({ type, value });
-        const [typeName, of] = this.extractType(type);
+
+        const { type: typeName, of } = type;
 
         if (!this.hasType(typeName)) {
             this.errors.addError(
                 new LionError(
-                    `Type '${typeName}' does not exist.`,
+                    `Type '${type.toString()}' does not exist.`,
                     value.region || new Region(0, 0, 0, 0),
                 ),
             );
@@ -280,14 +312,14 @@ export class TypeRegistry {
 
         const check = this.getType(typeName);
 
-        const val = check(value, of ? this.getType(of) : undefined);
+        const val = check(value, of);
         // console.log({ value, typeName, of, val, check });
         // console.log("================================end");
         return val;
     }
 
     public extractType(type: string): [string, string] | [string] {
-        const match = /(\w+)<([\w<>]+)>/g.exec(type);
+        const match = /(\w+)<([\w|<>]+)>/g.exec(type);
 
         return match && match[2] ? [match[1], match[2]] : [type];
     }
@@ -297,7 +329,10 @@ export class TypeRegistry {
  * A type alias for a function that checks the type of a given value.
  *
  * @param value - The value to be checked, which is of type `DocumentComponent`.
- * @param of - An optional parameter that is another `TypeCheck` function.
+ * @param of - An optional parameter that is another `SchemaComponent`.
  * @returns A boolean indicating whether the value passes the type check.
  */
-export type TypeCheck = (value: DocumentComponent, of?: TypeCheck) => boolean;
+export type TypeCheck = (
+    value: DocumentComponent,
+    of?: SchemaComponent,
+) => boolean;

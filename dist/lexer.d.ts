@@ -44,5 +44,6 @@ export declare enum TokenType {
     OF_TYPE_START = "OF_TYPE_START",
     OF_TYPE_END = "OF_TYPE_END",
     EOF = "EOF",
-    OPTIONAL_PROPERTY = "OPTIONAL_PROPERTY"
+    OPTIONAL_PROPERTY = "OPTIONAL_PROPERTY",
+    PIPE = "PIPE"
 }
