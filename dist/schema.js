@@ -39,9 +39,10 @@ exports.MultipleSchemaComponent = MultipleSchemaComponent;
  * Represents a schema.
  */
 class Schema {
-    constructor(context) {
+    constructor(context, region) {
         this.context = context;
         this.components = new Map();
+        this.region = region;
     }
     addComponent(name, component) {
         this.components.set(name, component);
@@ -50,7 +51,7 @@ class Schema {
         var _a, _b;
         const errorList = new context_1.LionErrorList();
         if (value.isSingleValue()) {
-            errorList.addError(new context_1.LionError(`Expected an object, got a single value.`, value.region || new lexer_1.Region(0, 0, 0, 0)));
+            errorList.addError(new context_1.LionError(`Expected an object, got a single value.`, value.region || this.region || new lexer_1.Region(0, 0, 0, 0)));
         }
         if (value.size <
             Array.from(this.components.values()).filter((x) => !x.isOptional).length ||
@@ -62,16 +63,20 @@ class Schema {
         }
         let differentKeys = Array.from(value.keys()).filter((x) => !this.components.has(x));
         for (const key of differentKeys) {
-            errorList.addError(new context_1.LionError(`Unexpected key '${key}'.`, ((_a = value.get(key)) === null || _a === void 0 ? void 0 : _a.region) || new lexer_1.Region(0, 0, 0, 0)));
+            errorList.addError(new context_1.LionError(`Unexpected key '${key}'.`, ((_a = value.get(key)) === null || _a === void 0 ? void 0 : _a.region) ||
+                this.region ||
+                new lexer_1.Region(0, 0, 0, 0)));
         }
         for (const [key, component] of this.components) {
             if (!value.has(key) && !component.isOptional) {
-                errorList.addError(new context_1.LionError(`Expected key '${key}' to be present.`, value.region || new lexer_1.Region(0, 0, 0, 0)));
+                errorList.addError(new context_1.LionError(`Expected key '${key}' to be present.`, value.region || this.region || new lexer_1.Region(0, 0, 0, 0)));
                 continue;
             }
             if (value.has(key) &&
                 !component.validate(value.get(key))) {
-                errorList.addError(new context_1.LionError(`Expected key '${key}' to satisfy the constrains of type '${component.toString()}'.`, ((_b = value.get(key)) === null || _b === void 0 ? void 0 : _b.region) || new lexer_1.Region(0, 0, 0, 0)));
+                errorList.addError(new context_1.LionError(`Expected key '${key}' to satisfy the constrains of type '${component.toString()}'.`, ((_b = value.get(key)) === null || _b === void 0 ? void 0 : _b.region) ||
+                    this.region ||
+                    new lexer_1.Region(0, 0, 0, 0)));
             }
         }
         if (errorList.errors.length > 0) {
@@ -109,8 +114,8 @@ ${Array.from(this.components)
 }
 exports.Schema = Schema;
 class BlankSchema extends Schema {
-    constructor(context, url) {
-        super(context);
+    constructor(context, url, region) {
+        super(context, region);
         this.url = url;
     }
 }

@@ -40,11 +40,11 @@ class Parser {
         }
     }
     parseSchema() {
-        var _a;
+        var _a, _b;
         this.expect(lexer_1.TokenType.MODIFIER, "@schema");
         if (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) === lexer_1.TokenType.STRING) {
             const url = this.expect(lexer_1.TokenType.STRING);
-            return new schema_1.BlankSchema(this.context, url);
+            return new schema_1.BlankSchema(this.context, url, (_b = this.currentToken) === null || _b === void 0 ? void 0 : _b.region);
         }
         this.expect(lexer_1.TokenType.LBRACE);
         const schemaEnd = this.tokens.findIndex((token) => token.type === lexer_1.TokenType.MODIFIER && token.value === "@doc");

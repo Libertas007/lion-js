@@ -1,4 +1,5 @@
 import { LionErrorList, ParsingContext } from "./context";
+import { Region } from "./lexer";
 import { DocumentComponent } from "./types";
 /**
  * Represents a schema component that can validate a document component against a specified type.
@@ -24,7 +25,8 @@ export declare class MultipleSchemaComponent extends SchemaComponent {
 export declare class Schema {
     components: Map<string, SchemaComponent>;
     context: ParsingContext;
-    constructor(context: ParsingContext);
+    region?: Region;
+    constructor(context: ParsingContext, region?: Region);
     addComponent(name: string, component: SchemaComponent): void;
     validate(value: DocumentComponent, process?: boolean, clear?: boolean): LionErrorList;
     toTypeCheck(): TypeCheck;
@@ -33,7 +35,7 @@ export declare class Schema {
 }
 export declare class BlankSchema extends Schema {
     url: string;
-    constructor(context: ParsingContext, url: string);
+    constructor(context: ParsingContext, url: string, region?: Region);
 }
 /**
  * The `TypeRegistry` class is a singleton that manages the registration and validation of types and schemas.

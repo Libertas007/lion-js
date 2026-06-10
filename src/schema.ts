@@ -63,10 +63,12 @@ export class MultipleSchemaComponent extends SchemaComponent {
 export class Schema {
     public components: Map<string, SchemaComponent>;
     public context: ParsingContext;
+    public region?: Region;
 
-    constructor(context: ParsingContext) {
+    constructor(context: ParsingContext, region?: Region) {
         this.context = context;
         this.components = new Map();
+        this.region = region;
     }
 
     public addComponent(name: string, component: SchemaComponent) {
@@ -84,7 +86,7 @@ export class Schema {
             errorList.addError(
                 new LionError(
                     `Expected an object, got a single value.`,
-                    value.region || new Region(0, 0, 0, 0),
+                    value.region || this.region || new Region(0, 0, 0, 0),
                 ),
             );
         }
@@ -117,7 +119,9 @@ export class Schema {
             errorList.addError(
                 new LionError(
                     `Unexpected key '${key}'.`,
-                    value.get(key)?.region || new Region(0, 0, 0, 0),
+                    value.get(key)?.region ||
+                        this.region ||
+                        new Region(0, 0, 0, 0),
                 ),
             );
         }
@@ -127,7 +131,7 @@ export class Schema {
                 errorList.addError(
                     new LionError(
                         `Expected key '${key}' to be present.`,
-                        value.region || new Region(0, 0, 0, 0),
+                        value.region || this.region || new Region(0, 0, 0, 0),
                     ),
                 );
                 continue;
@@ -140,7 +144,9 @@ export class Schema {
                 errorList.addError(
                     new LionError(
                         `Expected key '${key}' to satisfy the constrains of type '${component.toString()}'.`,
-                        value.get(key)?.region || new Region(0, 0, 0, 0),
+                        value.get(key)?.region ||
+                            this.region ||
+                            new Region(0, 0, 0, 0),
                     ),
                 );
             }
@@ -186,8 +192,8 @@ ${Array.from(this.components)
 export class BlankSchema extends Schema {
     public url: string;
 
-    constructor(context: ParsingContext, url: string) {
-        super(context);
+    constructor(context: ParsingContext, url: string, region?: Region) {
+        super(context, region);
         this.url = url;
     }
 }

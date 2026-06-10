@@ -1,5 +1,5 @@
 import { LionError, ParsingContext } from "./context";
-import { Lexer } from "./lexer";
+import { Lexer, Region } from "./lexer";
 import { Parser, SchemaParser } from "./parser";
 import { BlankSchema, Schema } from "./schema";
 import { DocumentComponent, LionDocument } from "./types";
@@ -7,6 +7,7 @@ import { DocumentComponent, LionDocument } from "./types";
 export * from "./types";
 export * from "./context";
 export * from "./schema";
+export { Region } from "./lexer";
 
 interface IODrivers {
     readFile?: (path: string) => Promise<string>;
@@ -51,16 +52,32 @@ export async function parseText(text: string): Promise<LionDocument> {
     const doc = parser.parse();
 
     if (doc.schema instanceof BlankSchema) {
-        const schemaText = isUrl(doc.schema.url)
-            ? await io.fetchUrl?.(doc.schema.url)
-            : await io.readFile?.(doc.schema.url);
+        try {
+            const schemaText = isUrl(doc.schema.url)
+                ? await io.fetchUrl?.(doc.schema.url)
+                : await io.readFile?.(doc.schema.url);
 
-        if (schemaText === undefined) {
-            throw new Error(
-                `No IO driver registered to fetch schema from ${doc.schema.url}`,
+            if (schemaText === undefined) {
+                context.errors.errors.push(
+                    new LionError(
+                        `No IO driver registered to fetch schema from ${doc.schema.url}`,
+                        doc.schema.region || new Region(0, 0, 0, 0),
+                    ),
+                );
+                doc.hasSchema = false;
+            } else {
+                doc.schema = parseSchema(schemaText);
+            }
+        } catch (e) {
+            context.errors.errors.push(
+                new LionError(
+                    `Failed to load schema from ${(doc.schema as BlankSchema).url}: ${e instanceof Error ? e.message : String(e)}`,
+                    doc.schema.region || new Region(0, 0, 0, 0),
+                ),
             );
+
+            doc.hasSchema = false;
         }
-        doc.schema = parseSchema(schemaText);
     }
 
     if (doc.hasSchema) {
@@ -99,16 +116,32 @@ export async function analyzeText(text: string): Promise<LionError[]> {
     const doc = parser.parse();
 
     if (doc.schema instanceof BlankSchema) {
-        const schemaText = isUrl(doc.schema.url)
-            ? await io.fetchUrl?.(doc.schema.url)
-            : await io.readFile?.(doc.schema.url);
+        try {
+            const schemaText = isUrl(doc.schema.url)
+                ? await io.fetchUrl?.(doc.schema.url)
+                : await io.readFile?.(doc.schema.url);
 
-        if (schemaText === undefined) {
-            throw new Error(
-                `No IO driver registered to fetch schema from ${doc.schema.url}`,
+            if (schemaText === undefined) {
+                context.errors.errors.push(
+                    new LionError(
+                        `No IO driver registered to fetch schema from ${doc.schema.url}`,
+                        doc.schema.region || new Region(0, 0, 0, 0),
+                    ),
+                );
+                doc.hasSchema = false;
+            } else {
+                doc.schema = parseSchema(schemaText);
+            }
+        } catch (e) {
+            context.errors.errors.push(
+                new LionError(
+                    `Failed to load schema from ${(doc.schema as BlankSchema).url}: ${e instanceof Error ? e.message : String(e)}`,
+                    doc.schema.region || new Region(0, 0, 0, 0),
+                ),
             );
+
+            doc.hasSchema = false;
         }
-        doc.schema = parseSchema(schemaText);
     }
 
     if (doc.hasSchema) {

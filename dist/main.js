@@ -14,7 +14,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.stringifySchema = exports.analyzeSchema = exports.parseSchemaOrNull = exports.parseSchema = exports.parseTextOrNull = exports.analyzeText = exports.stringifyDocument = exports.parseText = exports.__registerIO = void 0;
+exports.stringifySchema = exports.analyzeSchema = exports.parseSchemaOrNull = exports.parseSchema = exports.parseTextOrNull = exports.analyzeText = exports.stringifyDocument = exports.parseText = exports.__registerIO = exports.Region = void 0;
 const context_1 = require("./context");
 const lexer_1 = require("./lexer");
 const parser_1 = require("./parser");
@@ -22,6 +22,8 @@ const schema_1 = require("./schema");
 __exportStar(require("./types"), exports);
 __exportStar(require("./context"), exports);
 __exportStar(require("./schema"), exports);
+var lexer_2 = require("./lexer");
+Object.defineProperty(exports, "Region", { enumerable: true, get: function () { return lexer_2.Region; } });
 const io = {
     fetchUrl: typeof fetch === "function"
         ? async (url) => (await fetch(url)).text()
@@ -55,13 +57,22 @@ async function parseText(text) {
     const parser = new parser_1.Parser(lexer.process(), context);
     const doc = parser.parse();
     if (doc.schema instanceof schema_1.BlankSchema) {
-        const schemaText = isUrl(doc.schema.url)
-            ? await ((_a = io.fetchUrl) === null || _a === void 0 ? void 0 : _a.call(io, doc.schema.url))
-            : await ((_b = io.readFile) === null || _b === void 0 ? void 0 : _b.call(io, doc.schema.url));
-        if (schemaText === undefined) {
-            throw new Error(`No IO driver registered to fetch schema from ${doc.schema.url}`);
+        try {
+            const schemaText = isUrl(doc.schema.url)
+                ? await ((_a = io.fetchUrl) === null || _a === void 0 ? void 0 : _a.call(io, doc.schema.url))
+                : await ((_b = io.readFile) === null || _b === void 0 ? void 0 : _b.call(io, doc.schema.url));
+            if (schemaText === undefined) {
+                context.errors.errors.push(new context_1.LionError(`No IO driver registered to fetch schema from ${doc.schema.url}`, doc.schema.region || new lexer_1.Region(0, 0, 0, 0)));
+                doc.hasSchema = false;
+            }
+            else {
+                doc.schema = parseSchema(schemaText);
+            }
         }
-        doc.schema = parseSchema(schemaText);
+        catch (e) {
+            context.errors.errors.push(new context_1.LionError(`Failed to load schema from ${doc.schema.url}: ${e instanceof Error ? e.message : String(e)}`, doc.schema.region || new lexer_1.Region(0, 0, 0, 0)));
+            doc.hasSchema = false;
+        }
     }
     if (doc.hasSchema) {
         const errorList = doc.schema.validate(doc.doc, true, true);
@@ -94,13 +105,22 @@ async function analyzeText(text) {
     const parser = new parser_1.Parser(lexer.process(), context);
     const doc = parser.parse();
     if (doc.schema instanceof schema_1.BlankSchema) {
-        const schemaText = isUrl(doc.schema.url)
-            ? await ((_a = io.fetchUrl) === null || _a === void 0 ? void 0 : _a.call(io, doc.schema.url))
-            : await ((_b = io.readFile) === null || _b === void 0 ? void 0 : _b.call(io, doc.schema.url));
-        if (schemaText === undefined) {
-            throw new Error(`No IO driver registered to fetch schema from ${doc.schema.url}`);
+        try {
+            const schemaText = isUrl(doc.schema.url)
+                ? await ((_a = io.fetchUrl) === null || _a === void 0 ? void 0 : _a.call(io, doc.schema.url))
+                : await ((_b = io.readFile) === null || _b === void 0 ? void 0 : _b.call(io, doc.schema.url));
+            if (schemaText === undefined) {
+                context.errors.errors.push(new context_1.LionError(`No IO driver registered to fetch schema from ${doc.schema.url}`, doc.schema.region || new lexer_1.Region(0, 0, 0, 0)));
+                doc.hasSchema = false;
+            }
+            else {
+                doc.schema = parseSchema(schemaText);
+            }
         }
-        doc.schema = parseSchema(schemaText);
+        catch (e) {
+            context.errors.errors.push(new context_1.LionError(`Failed to load schema from ${doc.schema.url}: ${e instanceof Error ? e.message : String(e)}`, doc.schema.region || new lexer_1.Region(0, 0, 0, 0)));
+            doc.hasSchema = false;
+        }
     }
     if (doc.hasSchema) {
         const errorList = doc.schema.validate(doc.doc, false, false);

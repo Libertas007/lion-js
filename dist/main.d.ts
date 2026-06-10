@@ -4,6 +4,7 @@ import { LionDocument } from "./types";
 export * from "./types";
 export * from "./context";
 export * from "./schema";
+export { Region } from "./lexer";
 interface IODrivers {
     readFile?: (path: string) => Promise<string>;
     fetchUrl?: (url: string) => Promise<string>;

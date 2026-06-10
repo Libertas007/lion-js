@@ -59,7 +59,11 @@ export class Parser {
         this.expect(TokenType.MODIFIER, "@schema");
         if (this.currentToken?.type === TokenType.STRING) {
             const url = this.expect(TokenType.STRING) as string;
-            return new BlankSchema(this.context, url);
+            return new BlankSchema(
+                this.context,
+                url,
+                this.currentToken?.region,
+            );
         }
 
         this.expect(TokenType.LBRACE);
