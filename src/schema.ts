@@ -77,7 +77,7 @@ export class Schema {
         value: DocumentComponent,
         process: boolean = false,
         clear: boolean = true,
-    ): boolean {
+    ): LionErrorList {
         const errorList = new LionErrorList();
 
         if (value.isSingleValue()) {
@@ -147,18 +147,16 @@ export class Schema {
         }
 
         if (errorList.errors.length > 0) {
-            this.context.errors.errors.push(...errorList.errors);
-            return false;
+            return errorList;
         }
 
-        this.context.errors.errors = [];
-        return true;
+        return new LionErrorList();
     }
 
     public toTypeCheck(): TypeCheck {
         return (value: DocumentComponent) => {
             if (value.isSingleValue()) return false;
-            return this.validate(value);
+            return this.validate(value).errors.length === 0;
         };
     }
 
@@ -182,6 +180,15 @@ ${Array.from(this.components)
     .join(",\n")}
 }       
         `;
+    }
+}
+
+export class BlankSchema extends Schema {
+    public url: string;
+
+    constructor(context: ParsingContext, url: string) {
+        super(context);
+        this.url = url;
     }
 }
 

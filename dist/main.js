@@ -14,13 +14,32 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.stringifySchema = exports.analyzeSchema = exports.parseSchemaOrNull = exports.parseSchema = exports.parseTextOrNull = exports.analyzeText = exports.stringifyDocument = exports.parseText = void 0;
+exports.stringifySchema = exports.analyzeSchema = exports.parseSchemaOrNull = exports.parseSchema = exports.parseTextOrNull = exports.analyzeText = exports.stringifyDocument = exports.parseText = exports.__registerIO = void 0;
 const context_1 = require("./context");
 const lexer_1 = require("./lexer");
 const parser_1 = require("./parser");
+const schema_1 = require("./schema");
 __exportStar(require("./types"), exports);
 __exportStar(require("./context"), exports);
 __exportStar(require("./schema"), exports);
+const io = {
+    fetchUrl: typeof fetch === "function"
+        ? async (url) => (await fetch(url)).text()
+        : undefined,
+};
+function __registerIO(drivers) {
+    Object.assign(io, drivers);
+}
+exports.__registerIO = __registerIO;
+function isUrl(value) {
+    try {
+        new URL(value);
+        return true;
+    }
+    catch (_a) {
+        return false;
+    }
+}
 /**
  * Parses the given text and returns a LionDocument.
  *
@@ -29,13 +48,24 @@ __exportStar(require("./schema"), exports);
  *
  * @throws Will throw an error if the document schema validation fails.
  */
-function parseText(text) {
+async function parseText(text) {
+    var _a, _b;
     const context = new context_1.ParsingContext();
     const lexer = new lexer_1.Lexer(text, context);
     const parser = new parser_1.Parser(lexer.process(), context);
     const doc = parser.parse();
+    if (doc.schema instanceof schema_1.BlankSchema) {
+        const schemaText = isUrl(doc.schema.url)
+            ? await ((_a = io.fetchUrl) === null || _a === void 0 ? void 0 : _a.call(io, doc.schema.url))
+            : await ((_b = io.readFile) === null || _b === void 0 ? void 0 : _b.call(io, doc.schema.url));
+        if (schemaText === undefined) {
+            throw new Error(`No IO driver registered to fetch schema from ${doc.schema.url}`);
+        }
+        doc.schema = parseSchema(schemaText);
+    }
     if (doc.hasSchema) {
-        doc.schema.validate(doc.doc, true, true);
+        const errorList = doc.schema.validate(doc.doc, true, true);
+        context.errors.errors.push(...errorList.errors);
     }
     context.errors.process();
     return doc;
@@ -57,13 +87,24 @@ exports.stringifyDocument = stringifyDocument;
  * @param text - The text to be analyzed.
  * @returns An array of LionError objects containing the analysis results.
  */
-function analyzeText(text) {
+async function analyzeText(text) {
+    var _a, _b;
     const context = new context_1.ParsingContext();
     const lexer = new lexer_1.Lexer(text, context);
     const parser = new parser_1.Parser(lexer.process(), context);
     const doc = parser.parse();
+    if (doc.schema instanceof schema_1.BlankSchema) {
+        const schemaText = isUrl(doc.schema.url)
+            ? await ((_a = io.fetchUrl) === null || _a === void 0 ? void 0 : _a.call(io, doc.schema.url))
+            : await ((_b = io.readFile) === null || _b === void 0 ? void 0 : _b.call(io, doc.schema.url));
+        if (schemaText === undefined) {
+            throw new Error(`No IO driver registered to fetch schema from ${doc.schema.url}`);
+        }
+        doc.schema = parseSchema(schemaText);
+    }
     if (doc.hasSchema) {
-        doc.schema.validate(doc.doc, false, false);
+        const errorList = doc.schema.validate(doc.doc, false, false);
+        context.errors.errors.push(...errorList.errors);
     }
     return context.errors.errors;
 }
@@ -74,9 +115,9 @@ exports.analyzeText = analyzeText;
  * @param text - The text to be parsed.
  * @returns A `LionDocument` object if parsing is successful, otherwise `null`.
  */
-function parseTextOrNull(text) {
+async function parseTextOrNull(text) {
     try {
-        return parseText(text);
+        return await parseText(text);
     }
     catch (e) {
         return null;

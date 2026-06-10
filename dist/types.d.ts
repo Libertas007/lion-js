@@ -16,7 +16,6 @@ export declare class LionDocument {
     constructor(context: ParsingContext, document: DocumentComponent, schema?: Schema);
     get(key: string): DocumentComponent | ValuePrimitive | undefined;
     set(key: string, value: ValuePrimitive): void;
-    validate(silent?: boolean): boolean;
     stringify(): string;
     private stringifyValue;
     private stringifyObject;

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TypeRegistry = exports.Schema = exports.MultipleSchemaComponent = exports.SchemaComponent = void 0;
+exports.TypeRegistry = exports.BlankSchema = exports.Schema = exports.MultipleSchemaComponent = exports.SchemaComponent = void 0;
 const context_1 = require("./context");
 const lexer_1 = require("./lexer");
 /**
@@ -75,17 +75,15 @@ class Schema {
             }
         }
         if (errorList.errors.length > 0) {
-            this.context.errors.errors.push(...errorList.errors);
-            return false;
+            return errorList;
         }
-        this.context.errors.errors = [];
-        return true;
+        return new context_1.LionErrorList();
     }
     toTypeCheck() {
         return (value) => {
             if (value.isSingleValue())
                 return false;
-            return this.validate(value);
+            return this.validate(value).errors.length === 0;
         };
     }
     stringify() {
@@ -110,6 +108,13 @@ ${Array.from(this.components)
     }
 }
 exports.Schema = Schema;
+class BlankSchema extends Schema {
+    constructor(context, url) {
+        super(context);
+        this.url = url;
+    }
+}
+exports.BlankSchema = BlankSchema;
 /**
  * The `TypeRegistry` class is a singleton that manages the registration and validation of types and schemas.
  * It provides methods to register types and sub-schemas, retrieve types, and validate values against types.

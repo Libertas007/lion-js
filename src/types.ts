@@ -35,10 +35,6 @@ export class LionDocument {
         this.doc.set(key, new DocumentComponent(value));
     }
 
-    public validate(silent = true): boolean {
-        return this.schema.validate(this.doc, !silent, true);
-    }
-
     public stringify(): string {
         let text = "";
 

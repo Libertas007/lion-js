@@ -1,0 +1,10 @@
+{
+    "name": "@libertas/lion",
+    "version": "2.0.0",
+    "exports": {
+        ".": "./src/main.ts",
+        "./node": "./src/platform/node.ts",
+        "./deno": "./src/platform/deno.ts",
+        "./bun": "./src/platform/bun.ts"
+    }
+}

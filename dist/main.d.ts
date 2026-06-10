@@ -4,6 +4,11 @@ import { LionDocument } from "./types";
 export * from "./types";
 export * from "./context";
 export * from "./schema";
+interface IODrivers {
+    readFile?: (path: string) => Promise<string>;
+    fetchUrl?: (url: string) => Promise<string>;
+}
+export declare function __registerIO(drivers: IODrivers): void;
 /**
  * Parses the given text and returns a LionDocument.
  *
@@ -12,7 +17,7 @@ export * from "./schema";
  *
  * @throws Will throw an error if the document schema validation fails.
  */
-export declare function parseText(text: string): LionDocument;
+export declare function parseText(text: string): Promise<LionDocument>;
 /**
  * Converts a LionDocument object to its string representation.
  *
@@ -26,14 +31,14 @@ export declare function stringifyDocument(doc: LionDocument): string;
  * @param text - The text to be analyzed.
  * @returns An array of LionError objects containing the analysis results.
  */
-export declare function analyzeText(text: string): LionError[];
+export declare function analyzeText(text: string): Promise<LionError[]>;
 /**
  * Parses the given text into a `LionDocument` object. If parsing fails, returns `null`.
  *
  * @param text - The text to be parsed.
  * @returns A `LionDocument` object if parsing is successful, otherwise `null`.
  */
-export declare function parseTextOrNull(text: string): LionDocument | null;
+export declare function parseTextOrNull(text: string): Promise<LionDocument | null>;
 /**
  * Parses a given schema text and returns a Schema object.
  *

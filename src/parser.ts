@@ -1,6 +1,7 @@
 import { LionError, ParsingContext } from "./context";
 import { Region, Token, TokenType } from "./lexer";
 import {
+    BlankSchema,
     MultipleSchemaComponent,
     Schema,
     SchemaComponent,
@@ -57,8 +58,8 @@ export class Parser {
     private parseSchema(): Schema {
         this.expect(TokenType.MODIFIER, "@schema");
         if (this.currentToken?.type === TokenType.STRING) {
-            console.warn("Schema by name is not supported yet");
-            return new Schema(this.context);
+            const url = this.expect(TokenType.STRING) as string;
+            return new BlankSchema(this.context, url);
         }
 
         this.expect(TokenType.LBRACE);

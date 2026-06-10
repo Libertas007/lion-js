@@ -19,9 +19,6 @@ class LionDocument {
     set(key, value) {
         this.doc.set(key, new DocumentComponent(value));
     }
-    validate(silent = true) {
-        return this.schema.validate(this.doc, !silent, true);
-    }
     stringify() {
         let text = "";
         if (this.hasSchema) {

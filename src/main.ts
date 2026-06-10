@@ -1,12 +1,37 @@
 import { LionError, ParsingContext } from "./context";
 import { Lexer } from "./lexer";
 import { Parser, SchemaParser } from "./parser";
-import { Schema } from "./schema";
+import { BlankSchema, Schema } from "./schema";
 import { DocumentComponent, LionDocument } from "./types";
 
 export * from "./types";
 export * from "./context";
 export * from "./schema";
+
+interface IODrivers {
+    readFile?: (path: string) => Promise<string>;
+    fetchUrl?: (url: string) => Promise<string>;
+}
+
+const io: IODrivers = {
+    fetchUrl:
+        typeof fetch === "function"
+            ? async (url: string) => (await fetch(url)).text()
+            : undefined,
+};
+
+export function __registerIO(drivers: IODrivers) {
+    Object.assign(io, drivers);
+}
+
+function isUrl(value: string): boolean {
+    try {
+        new URL(value);
+        return true;
+    } catch {
+        return false;
+    }
+}
 
 /**
  * Parses the given text and returns a LionDocument.
@@ -16,7 +41,7 @@ export * from "./schema";
  *
  * @throws Will throw an error if the document schema validation fails.
  */
-export function parseText(text: string): LionDocument {
+export async function parseText(text: string): Promise<LionDocument> {
     const context = new ParsingContext();
 
     const lexer = new Lexer(text, context);
@@ -25,8 +50,22 @@ export function parseText(text: string): LionDocument {
 
     const doc = parser.parse();
 
+    if (doc.schema instanceof BlankSchema) {
+        const schemaText = isUrl(doc.schema.url)
+            ? await io.fetchUrl?.(doc.schema.url)
+            : await io.readFile?.(doc.schema.url);
+
+        if (schemaText === undefined) {
+            throw new Error(
+                `No IO driver registered to fetch schema from ${doc.schema.url}`,
+            );
+        }
+        doc.schema = parseSchema(schemaText);
+    }
+
     if (doc.hasSchema) {
-        doc.schema.validate(doc.doc, true, true);
+        const errorList = doc.schema.validate(doc.doc, true, true);
+        context.errors.errors.push(...errorList.errors);
     }
 
     context.errors.process();
@@ -50,7 +89,7 @@ export function stringifyDocument(doc: LionDocument): string {
  * @param text - The text to be analyzed.
  * @returns An array of LionError objects containing the analysis results.
  */
-export function analyzeText(text: string): LionError[] {
+export async function analyzeText(text: string): Promise<LionError[]> {
     const context = new ParsingContext();
 
     const lexer = new Lexer(text, context);
@@ -59,8 +98,22 @@ export function analyzeText(text: string): LionError[] {
 
     const doc = parser.parse();
 
+    if (doc.schema instanceof BlankSchema) {
+        const schemaText = isUrl(doc.schema.url)
+            ? await io.fetchUrl?.(doc.schema.url)
+            : await io.readFile?.(doc.schema.url);
+
+        if (schemaText === undefined) {
+            throw new Error(
+                `No IO driver registered to fetch schema from ${doc.schema.url}`,
+            );
+        }
+        doc.schema = parseSchema(schemaText);
+    }
+
     if (doc.hasSchema) {
-        doc.schema.validate(doc.doc, false, false);
+        const errorList = doc.schema.validate(doc.doc, false, false);
+        context.errors.errors.push(...errorList.errors);
     }
 
     return context.errors.errors;
@@ -72,9 +125,11 @@ export function analyzeText(text: string): LionError[] {
  * @param text - The text to be parsed.
  * @returns A `LionDocument` object if parsing is successful, otherwise `null`.
  */
-export function parseTextOrNull(text: string): LionDocument | null {
+export async function parseTextOrNull(
+    text: string,
+): Promise<LionDocument | null> {
     try {
-        return parseText(text);
+        return await parseText(text);
     } catch (e) {
         return null;
     }

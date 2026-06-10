@@ -43,8 +43,8 @@ class Parser {
         var _a;
         this.expect(lexer_1.TokenType.MODIFIER, "@schema");
         if (((_a = this.currentToken) === null || _a === void 0 ? void 0 : _a.type) === lexer_1.TokenType.STRING) {
-            console.warn("Schema by name is not supported yet");
-            return new schema_1.Schema(this.context);
+            const url = this.expect(lexer_1.TokenType.STRING);
+            return new schema_1.BlankSchema(this.context, url);
         }
         this.expect(lexer_1.TokenType.LBRACE);
         const schemaEnd = this.tokens.findIndex((token) => token.type === lexer_1.TokenType.MODIFIER && token.value === "@doc");

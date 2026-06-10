@@ -26,10 +26,14 @@ export declare class Schema {
     context: ParsingContext;
     constructor(context: ParsingContext);
     addComponent(name: string, component: SchemaComponent): void;
-    validate(value: DocumentComponent, process?: boolean, clear?: boolean): boolean;
+    validate(value: DocumentComponent, process?: boolean, clear?: boolean): LionErrorList;
     toTypeCheck(): TypeCheck;
     stringify(): string;
     stringifyAsSubSchema(name: string): string;
+}
+export declare class BlankSchema extends Schema {
+    url: string;
+    constructor(context: ParsingContext, url: string);
 }
 /**
  * The `TypeRegistry` class is a singleton that manages the registration and validation of types and schemas.
