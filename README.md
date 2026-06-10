@@ -4,12 +4,14 @@ This library can be used to parse text in `lion` format.
 
 Learn more about lion here: [Libertas007/lion](https://github.com/Libertas007/lion)
 
+> **IMPORTANT**: Due to introduction of reading schema from URL or file, methods for parsing document have become **async**. Please, update the code accordingly.
+
 ## Usage
 
 ```js
 import { parseText, stringifyDocument } from "lion-parser";
 
-const document = parseText('@doc {example: "example"}');
+const document = async parseText('@doc {example: "example"}');
 
 console.log(stringifyDocument(document));
 ```
@@ -23,7 +25,7 @@ This function parses a string to a Lion document. If the input string is invalid
 ```js
 import { parseText } from "lion-parser";
 
-const document = parseText('@doc {example: "example"}');
+const document = async parseText('@doc {example: "example"}');
 ```
 
 ### `parseTextOrNull`
@@ -33,7 +35,7 @@ Similar to the previous, this function parses a string to a Lion document. Howev
 ```js
 import { parseTextOrNull } from "lion-parser";
 
-const document = parseTextOrNull('@doc {example: "example"}');
+const document = async parseTextOrNull('@doc {example: "example"}');
 ```
 
 ### `parseSchema`
@@ -87,7 +89,7 @@ This function checks for any errors, which might be in the specified string, and
 ```js
 import { analyzeText } from "lion-parser";
 
-const errors = analyzeText('@doc {example: "example"}');
+const errors = async analyzeText('@doc {example: "example"}');
 ```
 
 ### `analyzeSchema`
