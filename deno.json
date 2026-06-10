@@ -1,5 +1,0 @@
-{
-    "name": "@libertas/lion",
-    "version": "1.2.0",
-    "exports": "./src/main.ts"
-}
